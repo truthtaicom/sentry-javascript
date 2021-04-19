@@ -25,3 +25,12 @@ export function init(options: NextjsOptions): void {
     scope.setTag('runtime', 'node');
   });
 }
+
+export function hi() {
+  console.log('hi from dist/index.server.js');
+}
+
+// add the following to next.config.js to show that this works
+
+// const SentrySDK = require("@sentry/nextjs");
+// console.log(SentrySDK.hi());
