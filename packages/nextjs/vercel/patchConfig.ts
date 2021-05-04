@@ -16,7 +16,6 @@ import * as eslint from 'eslint';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as prettier from 'prettier';
-// import * as ts from 'typescript';
 import { promisify } from 'util';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -25,6 +24,8 @@ type StringObject = PlainObject<string>;
 
 type PackageJSON = { name: string; dependencies: StringObject; devDependencies: StringObject; volta?: StringObject };
 
+type TSConfig = { extends?: string; compilerOptions?: PlainObject };
+
 async function asyncForEach<T>(arr: T[], callback: (element: T, index: number, arr: T[]) => unknown): Promise<void> {
   for (let i = 0; i < arr.length; i++) {
     await callback(arr[i], i, arr);
@@ -32,11 +33,6 @@ async function asyncForEach<T>(arr: T[], callback: (element: T, index: number, a
 }
 
 async function doPatching(): Promise<void> {
-  // const packageNames = fs.readdirSync('../../packages').filter(name => {
-  //   const packagePath = path.resolve('../../packages', name);
-  //   return fs.statSync(packagePath).isDirectory();
-  // });
-
   const packagesDir = path.resolve('../../packages');
 
   // get the names of all the packages
@@ -80,67 +76,55 @@ async function doPatching(): Promise<void> {
       }
     }
 
-    const eslintConfig: PlainObject = {
-      fix: true,
-      overrideConfig: {
-        plugins: ['jsonc'],
-        extends: ['plugin:jsonc/base'],
-        overrides: [
-          {
-            files: ['*.json'],
-            rules: {
-              'jsonc/array-bracket-newline': [
-                'error',
-                {
-                  multiline: true,
-                  minItems: 1,
-                },
-              ],
-              'jsonc/object-curly-newline': [
-                'error',
-                {
-                  ObjectExpression: { multiline: true, minProperties: 1 },
-                },
-              ],
-              'jsonc/array-element-newline': [
-                'error',
-                {
-                  multiline: true,
-                  minItems: 1,
-                },
-              ],
-              'jsonc/object-property-newline': ['error'],
-              'jsonc/indent': ['error', 2],
-              'no-trailing-spaces': 'error',
-            },
-          },
-        ],
-      },
-    };
+    await writeFormattedJSON(packageJSON, packageJSONPath);
+  });
 
-    await prettier
-      .resolveConfigFile()
-      .then(configFilepath => prettier.resolveConfig(configFilepath as string))
-      .then(options => prettier.format(JSON.stringify(packageJSON), { ...options, parser: 'json' } as prettier.Options))
-      .then(finalOutput =>
-        fs.writeFile(packageJSONPath, finalOutput, () => {
-          void new eslint.ESLint(eslintConfig)
-            .lintFiles([packageJSONPath])
-            .then(lintResults => eslint.ESLint.outputFixes(lintResults))
-            .then(() =>
-              // eslint-disable-next-line no-console
-              console.log(`Done rewriting \`package.json\` for @sentry/${dirName}.`),
-            )
-            .catch(err => {
-              // eslint-disable-next-line no-console
-              console.log(`Error using eslint to format ${packageJSONPath}: ${err}`);
-            });
-        }),
-      )
-      .catch(err => {
-        // eslint-disable-next-line no-console
-        console.log(`Error using prettier to format ${packageJSONPath}: ${err}`);
-      });
+  // compile full tsconfig files, following any `extends` entries to their source
+  const tsConfigFiles = fs
+    // .readdirSync('..')
+    .readdirSync('.')
+    .filter(fileOrDirName => fileOrDirName.includes('tsconfig'))
+    // .map(configFile => path.resolve('..', configFile));
+    .map(configFile => path.resolve('.', configFile));
+
+  // TODO have to grab and cache blobs before we do any rewriting on disk since one depends on another
+  await asyncForEach(tsConfigFiles, async configFilePath => {
+    const configBlobs: TSConfig[] = [];
+    let currentConfigFile = configFilePath;
+
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      // grab the config values from the file we're currently looking at
+      const config = require(currentConfigFile) as TSConfig; // eslint-disable-line @typescript-eslint/no-var-requires
+      configBlobs.push(config);
+
+      // if this config extends another, go look at that one
+      if (config.extends) {
+        const currentConfigDir = path.dirname(currentConfigFile);
+        const extendee = path.resolve(currentConfigDir, config.extends);
+        currentConfigFile = extendee;
+      }
+      // we've reached the top of the tree
+      else {
+        break;
+      }
+    }
+
+    const fullConfig: TSConfig = { compilerOptions: {} };
+
+    // layer config blobs on top of each other, starting with the top of the tree (pushed into the blob array last),
+    // shallow-merging compiler options and overwriting all other values with new ones as we layer
+    while (configBlobs.length) {
+      const { compilerOptions: currentCompilerOptions, ...rest } = configBlobs.pop() as TSConfig;
+      Object.assign(fullConfig.compilerOptions, currentCompilerOptions || {});
+      Object.assign(fullConfig, rest || {});
+    }
+
+    // now that we've used it to walk the inheritance tree, get rid of the `extends` property so its relative path
+    // doesn't confuse vercel
+    delete fullConfig.extends;
+
+    await writeFormattedJSON(fullConfig, configFilePath);
   });
 }
 
@@ -148,6 +132,70 @@ async function getGitBranch(): Promise<string> {
   const asyncExec = promisify(exec);
   const { stdout } = await asyncExec('git rev-parse --abbrev-ref HEAD');
   return stdout.trim();
+}
+
+async function writeFormattedJSON(content: PlainObject, destinationPath: string): Promise<void> {
+  const eslintConfig: PlainObject = {
+    fix: true,
+    overrideConfig: {
+      plugins: ['jsonc'],
+      extends: ['plugin:jsonc/base'],
+      overrides: [
+        {
+          files: ['*.json'],
+          rules: {
+            'jsonc/array-bracket-newline': [
+              'error',
+              {
+                multiline: true,
+                minItems: 1,
+              },
+            ],
+            'jsonc/object-curly-newline': [
+              'error',
+              {
+                ObjectExpression: { multiline: true, minProperties: 1 },
+              },
+            ],
+            'jsonc/array-element-newline': [
+              'error',
+              {
+                multiline: true,
+                minItems: 1,
+              },
+            ],
+            'jsonc/object-property-newline': ['error'],
+            'jsonc/indent': ['error', 2],
+            'no-trailing-spaces': 'error',
+          },
+        },
+      ],
+    },
+  };
+
+  return await prettier
+    .resolveConfigFile()
+    .then(configFilepath => prettier.resolveConfig(configFilepath as string))
+    .then(options => prettier.format(JSON.stringify(content), { ...options, parser: 'json' } as prettier.Options))
+    .then(finalOutput =>
+      fs.writeFile(destinationPath, finalOutput, async () => {
+        await new eslint.ESLint(eslintConfig)
+          .lintFiles([destinationPath])
+          .then(lintResults => eslint.ESLint.outputFixes(lintResults))
+          .then(() =>
+            // eslint-disable-next-line no-console
+            console.log(`Done rewriting \`${destinationPath}\`.`),
+          )
+          .catch(err => {
+            // eslint-disable-next-line no-console
+            console.log(`Error using eslint to format ${destinationPath}: ${err}`);
+          });
+      }),
+    )
+    .catch(err => {
+      // eslint-disable-next-line no-console
+      console.log(`Error using prettier to format ${destinationPath}: ${err}`);
+    });
 }
 
 void doPatching();
