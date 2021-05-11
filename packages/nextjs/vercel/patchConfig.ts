@@ -163,8 +163,6 @@ async function patchPackageJSON(packageJSONPath: string, gitPkgURLs: PlainObject
 }
 
 async function writeFormattedJSON(content: PlainObject, destinationPath: string): Promise<void> {
-  console.log('rewriting', destinationPath);
-
   const eslintConfig: PlainObject = {
     fix: true,
     overrideConfig: {
@@ -209,6 +207,8 @@ async function writeFormattedJSON(content: PlainObject, destinationPath: string)
     .then(options => prettier.format(JSON.stringify(content), { ...options, parser: 'json' } as prettier.Options))
     .then(finalOutput =>
       fs.writeFile(destinationPath, finalOutput, async () => {
+        console.log('rewriting', destinationPath);
+
         await new eslint.ESLint(eslintConfig)
           .lintFiles([destinationPath])
           .then(lintResults => eslint.ESLint.outputFixes(lintResults))
