@@ -140,6 +140,7 @@ async function getGitBranch(): Promise<string> {
 }
 
 async function patchPackageJSON(packageJSONPath: string, gitPkgURLs: PlainObject<string>): Promise<void> {
+  console.log('patching', packageJSONPath);
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const packageJSON = require(packageJSONPath) as PackageJSON;
 
