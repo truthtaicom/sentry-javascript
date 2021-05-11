@@ -57,27 +57,32 @@ async function doPatching(): Promise<void> {
   await asyncForEach(packageDirNames, async dirName => {
     const packageJSONPath = path.resolve(packagesDir, dirName, 'package.json');
 
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const packageJSON = require(packageJSONPath) as PackageJSON;
-
-    // we don't care about it and it's got a relative path that might not play well on vercel
-    delete packageJSON.volta;
-
-    // replace the versions of all `@sentry/x` packages (the ones from this repo, at least) with the appropriate URL, in
-    // both regular and dev dependencies
-    for (const depName in packageJSON.dependencies) {
-      if (depName in gitPkgURLs) {
-        packageJSON.dependencies[depName] = gitPkgURLs[depName];
-      }
-    }
-    for (const depName in packageJSON.devDependencies) {
-      if (depName in gitPkgURLs) {
-        packageJSON.devDependencies[depName] = gitPkgURLs[depName];
-      }
-    }
-
-    await writeFormattedJSON(packageJSON, packageJSONPath);
+    await patchPackageJSON(packageJSONPath, gitPkgURLs);
   });
+  // await asyncForEach(packageDirNames, async dirName => {
+  //   const packageJSONPath = path.resolve(packagesDir, dirName, 'package.json');
+
+  //   // eslint-disable-next-line @typescript-eslint/no-var-requires
+  //   const packageJSON = require(packageJSONPath) as PackageJSON;
+
+  //   // we don't care about it and it's got a relative path that might not play well on vercel
+  //   delete packageJSON.volta;
+
+  //   // replace the versions of all `@sentry/x` packages (the ones from this repo, at least) with the appropriate URL, in
+  //   // both regular and dev dependencies
+  //   for (const depName in packageJSON.dependencies) {
+  //     if (depName in gitPkgURLs) {
+  //       packageJSON.dependencies[depName] = gitPkgURLs[depName];
+  //     }
+  //   }
+  //   for (const depName in packageJSON.devDependencies) {
+  //     if (depName in gitPkgURLs) {
+  //       packageJSON.devDependencies[depName] = gitPkgURLs[depName];
+  //     }
+  //   }
+
+  //   await writeFormattedJSON(packageJSON, packageJSONPath);
+  // });
 
   // compile full tsconfig files, following any `extends` entries to their source
   const tsConfigFiles = fs
@@ -134,31 +139,27 @@ async function getGitBranch(): Promise<string> {
   return stdout.trim();
 }
 
-async function patchPackageJSON(packageJSONPath: string): Promise<void> {
-  await asyncForEach(packageDirNames, async packageDirName => {
-    const packageJSONPath = path.resolve(packagesDir, packageDirName, 'package.json');
+async function patchPackageJSON(packageJSONPath: string, gitPkgURLs: PlainObject<string>): Promise<void> {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const packageJSON = require(packageJSONPath) as PackageJSON;
 
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const packageJSON = require(packageJSONPath) as PackageJSON;
+  // we don't care about it and it's got a relative path that might not play well on vercel
+  delete packageJSON.volta;
 
-    // we don't care about it and it's got a relative path that might not play well on vercel
-    delete packageJSON.volta;
-
-    // replace the versions of all `@sentry/x` packages (the ones from this repo, at least) with the appropriate URL, in
-    // both regular and dev dependencies
-    for (const depName in packageJSON.dependencies) {
-      if (depName in gitPkgURLs) {
-        packageJSON.dependencies[depName] = gitPkgURLs[depName];
-      }
+  // replace the versions of all `@sentry/x` packages (the ones from this repo, at least) with the appropriate URL, in
+  // both regular and dev dependencies
+  for (const depName in packageJSON.dependencies) {
+    if (depName in gitPkgURLs) {
+      packageJSON.dependencies[depName] = gitPkgURLs[depName];
     }
-    for (const depName in packageJSON.devDependencies) {
-      if (depName in gitPkgURLs) {
-        packageJSON.devDependencies[depName] = gitPkgURLs[depName];
-      }
+  }
+  for (const depName in packageJSON.devDependencies) {
+    if (depName in gitPkgURLs) {
+      packageJSON.devDependencies[depName] = gitPkgURLs[depName];
     }
+  }
 
-    await writeFormattedJSON(packageJSON, packageJSONPath);
-  });
+  await writeFormattedJSON(packageJSON, packageJSONPath);
 }
 
 async function writeFormattedJSON(content: PlainObject, destinationPath: string): Promise<void> {

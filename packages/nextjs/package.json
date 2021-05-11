@@ -61,7 +61,8 @@
     "fix:prettier": "prettier --write \"{src,test}/**/*.ts\"",
     "test": "jest",
     "test:watch": "jest --watch",
-    "pack": "npm pack"
+    "pack": "npm pack",
+    "patch": "ts-node scripts/patchConfig.ts"
   },
   "volta": {
     "extends": "../../package.json"
