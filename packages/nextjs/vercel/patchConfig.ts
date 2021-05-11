@@ -140,7 +140,6 @@ async function getGitBranch(): Promise<string> {
 }
 
 async function patchPackageJSON(packageJSONPath: string, gitPkgURLs: PlainObject<string>): Promise<void> {
-  console.log('patching', packageJSONPath);
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const packageJSON = require(packageJSONPath) as PackageJSON;
 
@@ -164,6 +163,8 @@ async function patchPackageJSON(packageJSONPath: string, gitPkgURLs: PlainObject
 }
 
 async function writeFormattedJSON(content: PlainObject, destinationPath: string): Promise<void> {
+  console.log('rewriting', destinationPath);
+
   const eslintConfig: PlainObject = {
     fix: true,
     overrideConfig: {
