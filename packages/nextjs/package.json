@@ -62,7 +62,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "pack": "npm pack",
-    "patch": "ts-node scripts/patchConfig.ts"
+    "patch": "ts-node vercel/patchConfig.ts"
   },
   "volta": {
     "extends": "../../package.json"
