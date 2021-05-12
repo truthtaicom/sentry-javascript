@@ -11,6 +11,8 @@
  *
  */
 
+// process.chdir('..');
+
 import { exec } from 'child_process';
 import * as eslint from 'eslint';
 import * as fs from 'fs';
@@ -205,27 +207,24 @@ async function writeFormattedJSON(content: PlainObject, destinationPath: string)
     .resolveConfigFile()
     .then(configFilepath => prettier.resolveConfig(configFilepath as string))
     .then(options => prettier.format(JSON.stringify(content), { ...options, parser: 'json' } as prettier.Options))
-    .then(finalOutput =>
-      fs.writeFile(destinationPath, finalOutput, async () => {
-        console.log('rewriting', destinationPath);
-
-        await new eslint.ESLint(eslintConfig)
-          .lintFiles([destinationPath])
-          .then(lintResults => eslint.ESLint.outputFixes(lintResults))
-          .then(() =>
-            // eslint-disable-next-line no-console
-            console.log(`Done rewriting \`${destinationPath}\`.`),
-          )
-          .catch(err => {
-            // eslint-disable-next-line no-console
-            console.log(`Error using eslint to format ${destinationPath}: ${err}`);
-          });
-      }),
-    )
-    .catch(err => {
+    .then(async finalOutput => {
+      fs.writeFileSync(destinationPath, finalOutput);
+      await new eslint.ESLint(eslintConfig)
+        .lintFiles([destinationPath])
+        .then(lintResults => eslint.ESLint.outputFixes(lintResults))
+        .then(() => {
+          // eslint-disable-next-line no-console
+          console.log(`Done rewriting \`${destinationPath}\`.`);
+        })
+        .catch(err => {
+          // eslint-disable-next-line no-console
+          console.log(`Error using eslint to format ${destinationPath}: ${err}`);
+        });
+    })
+    .catch(err =>
       // eslint-disable-next-line no-console
-      console.log(`Error using prettier to format ${destinationPath}: ${err}`);
-    });
+      console.log(`Error using prettier to format ${destinationPath}: ${err}`),
+    );
 }
 
 void doPatching();
