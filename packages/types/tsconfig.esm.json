@@ -42,7 +42,7 @@
     ],
     "paths": {
       "@sentry/*": [
-        "*/src"
+        "../*/src"
       ]
     },
     "noErrorTruncation": true,
