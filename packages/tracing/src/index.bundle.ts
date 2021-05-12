@@ -51,12 +51,15 @@ export {
 export { SDK_NAME, SDK_VERSION } from '@sentry/browser';
 
 import { Integrations as BrowserIntegrations } from '@sentry/browser';
+import { Integration } from '@sentry/types';
 import { getGlobalObject } from '@sentry/utils';
 
 import { BrowserTracing } from './browser';
 import { addExtensionMethods } from './hubextensions';
 
 export { Span } from './span';
+
+type IntegrationMap = { [key: string]: Integration };
 
 let windowIntegrations = {};
 
@@ -66,10 +69,13 @@ if (_window.Sentry && _window.Sentry.Integrations) {
   windowIntegrations = _window.Sentry.Integrations;
 }
 
-const INTEGRATIONS = {
-  ...windowIntegrations,
-  ...BrowserIntegrations,
-  BrowserTracing,
+const INTEGRATIONS: IntegrationMap = {
+  // TODO it's totally unclear why any of this typecasting is necessary - it's complaining that `setupOnce` is missing
+  // from various of these (but it isn't) and that therefore they can't be considered instances of `Integration` (even
+  // though they all implement `Integration`)
+  ...((windowIntegrations as unknown) as IntegrationMap),
+  ...((BrowserIntegrations as unknown) as IntegrationMap),
+  BrowserTracing: (BrowserTracing as unknown) as Integration,
 };
 
 export { INTEGRATIONS as Integrations };
