@@ -96,42 +96,43 @@ async function doPatching(): Promise<void> {
 
   // TODO have to grab and cache blobs before we do any rewriting on disk since one depends on another
   await asyncForEach(tsConfigFiles, async configFilePath => {
-    const configBlobs: TSConfig[] = [];
-    let currentConfigFile = configFilePath;
+    await patchTSConfig(configFilePath);
+    // const configBlobs: TSConfig[] = [];
+    // let currentConfigFile = configFilePath;
 
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-      // grab the config values from the file we're currently looking at
-      const config = require(currentConfigFile) as TSConfig; // eslint-disable-line @typescript-eslint/no-var-requires
-      configBlobs.push(config);
+    // // eslint-disable-next-line no-constant-condition
+    // while (true) {
+    //   // grab the config values from the file we're currently looking at
+    //   const config = require(currentConfigFile) as TSConfig; // eslint-disable-line @typescript-eslint/no-var-requires
+    //   configBlobs.push(config);
 
-      // if this config extends another, go look at that one
-      if (config.extends) {
-        const currentConfigDir = path.dirname(currentConfigFile);
-        const extendee = path.resolve(currentConfigDir, config.extends);
-        currentConfigFile = extendee;
-      }
-      // we've reached the top of the tree
-      else {
-        break;
-      }
-    }
+    //   // if this config extends another, go look at that one
+    //   if (config.extends) {
+    //     const currentConfigDir = path.dirname(currentConfigFile);
+    //     const extendee = path.resolve(currentConfigDir, config.extends);
+    //     currentConfigFile = extendee;
+    //   }
+    //   // we've reached the top of the tree
+    //   else {
+    //     break;
+    //   }
+    // }
 
-    const fullConfig: TSConfig = { compilerOptions: {} };
+    // const fullConfig: TSConfig = { compilerOptions: {} };
 
-    // layer config blobs on top of each other, starting with the top of the tree (pushed into the blob array last),
-    // shallow-merging compiler options and overwriting all other values with new ones as we layer
-    while (configBlobs.length) {
-      const { compilerOptions: currentCompilerOptions, ...rest } = configBlobs.pop() as TSConfig;
-      Object.assign(fullConfig.compilerOptions, currentCompilerOptions || {});
-      Object.assign(fullConfig, rest || {});
-    }
+    // // layer config blobs on top of each other, starting with the top of the tree (pushed into the blob array last),
+    // // shallow-merging compiler options and overwriting all other values with new ones as we layer
+    // while (configBlobs.length) {
+    //   const { compilerOptions: currentCompilerOptions, ...rest } = configBlobs.pop() as TSConfig;
+    //   Object.assign(fullConfig.compilerOptions, currentCompilerOptions || {});
+    //   Object.assign(fullConfig, rest || {});
+    // }
 
-    // now that we've used it to walk the inheritance tree, get rid of the `extends` property so its relative path
-    // doesn't confuse vercel
-    delete fullConfig.extends;
+    // // now that we've used it to walk the inheritance tree, get rid of the `extends` property so its relative path
+    // // doesn't confuse vercel
+    // delete fullConfig.extends;
 
-    await writeFormattedJSON(fullConfig, configFilePath);
+    // await writeFormattedJSON(fullConfig, configFilePath);
   });
 }
 
@@ -225,6 +226,45 @@ async function writeFormattedJSON(content: PlainObject, destinationPath: string)
       // eslint-disable-next-line no-console
       console.log(`Error using prettier to format ${destinationPath}: ${err}`),
     );
+}
+
+async function patchTSConfig(tsConfigPath: string): Promise<void> {
+  const configBlobs: TSConfig[] = [];
+  let currentConfigFile = tsConfigPath;
+
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    // grab the config values from the file we're currently looking at
+    const config = require(currentConfigFile) as TSConfig; // eslint-disable-line @typescript-eslint/no-var-requires
+    configBlobs.push(config);
+
+    // if this config extends another, go look at that one
+    if (config.extends) {
+      const currentConfigDir = path.dirname(currentConfigFile);
+      const extendee = path.resolve(currentConfigDir, config.extends);
+      currentConfigFile = extendee;
+    }
+    // we've reached the top of the tree
+    else {
+      break;
+    }
+  }
+
+  const fullConfig: TSConfig = { compilerOptions: {} };
+
+  // layer config blobs on top of each other, starting with the top of the tree (pushed into the blob array last),
+  // shallow-merging compiler options and overwriting all other values with new ones as we layer
+  while (configBlobs.length) {
+    const { compilerOptions: currentCompilerOptions, ...rest } = configBlobs.pop() as TSConfig;
+    Object.assign(fullConfig.compilerOptions, currentCompilerOptions || {});
+    Object.assign(fullConfig, rest || {});
+  }
+
+  // now that we've used it to walk the inheritance tree, get rid of the `extends` property so its relative path
+  // doesn't confuse vercel
+  delete fullConfig.extends;
+
+  await writeFormattedJSON(fullConfig, tsConfigPath);
 }
 
 void doPatching();
