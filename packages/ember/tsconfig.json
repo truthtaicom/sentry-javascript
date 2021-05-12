@@ -1,28 +1,83 @@
 {
-  "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "target": "es2017",
-    "allowJs": true,
-    "moduleResolution": "node",
-    "allowSyntheticDefaultImports": true,
     "alwaysStrict": true,
+    "declaration": true,
+    "declarationMap": true,
+    "downlevelIteration": true,
+    "inlineSources": true,
+    "importHelpers": true,
+    "lib": [
+      "es6",
+      "dom"
+    ],
+    "module": "esnext",
+    "moduleResolution": "node",
+    "noEmitHelpers": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
     "noImplicitUseStrict": false,
+    "noImplicitThis": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "pretty": true,
+    "sourceMap": true,
+    "strict": true,
+    "target": "es2017",
+    "strictBindCallApply": false,
+    "plugins": [
+      {
+        "name": "typescript-tslint-plugin",
+        "alwaysShowRuleFailuresAsWarnings": false,
+        "ignoreDefinitionFiles": true,
+        "configFile": "./tslint.json",
+        "suppressWhileTypeErrorsPresent": false,
+        "mockTypeScriptVersion": false
+      }
+    ],
+    "baseUrl": ".",
+    "allowSyntheticDefaultImports": true,
+    "types": [
+      "node"
+    ],
+    "paths": {
+      "dummy/tests/*": [
+        "tests/*"
+      ],
+      "dummy/*": [
+        "tests/dummy/app/*",
+        "app/*"
+      ],
+      "@sentry/ember": [
+        "addon"
+      ],
+      "@sentry/ember/*": [
+        "addon/*"
+      ],
+      "@sentry/ember/test-support": [
+        "addon-test-support"
+      ],
+      "@sentry/ember/test-support/*": [
+        "addon-test-support/*"
+      ],
+      "*": [
+        "types/*"
+      ]
+    },
+    "noErrorTruncation": true,
+    "allowJs": true,
     "strictNullChecks": true,
     "strictPropertyInitialization": true,
     "noEmitOnError": false,
     "noEmit": true,
-    "baseUrl": ".",
-    "module": "esnext",
-    "experimentalDecorators": true,
-    "paths": {
-      "dummy/tests/*": ["tests/*"],
-      "dummy/*": ["tests/dummy/app/*", "app/*"],
-      "@sentry/ember": ["addon"],
-      "@sentry/ember/*": ["addon/*"],
-      "@sentry/ember/test-support": ["addon-test-support"],
-      "@sentry/ember/test-support/*": ["addon-test-support/*"],
-      "*": ["types/*"]
-    }
+    "experimentalDecorators": true
   },
-  "include": ["app/**/*", "addon/**/*", "types/**/*", "addon-test-support/**/*"]
+  "include": [
+    "app/**/*",
+    "addon/**/*",
+    "tests/**/*",
+    "types/**/*",
+    "test-support/**/*",
+    "addon-test-support/**/*"
+  ]
 }

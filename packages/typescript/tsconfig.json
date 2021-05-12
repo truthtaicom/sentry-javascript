@@ -6,7 +6,10 @@
     "downlevelIteration": true,
     "inlineSources": true,
     "importHelpers": true,
-    "lib": ["es6", "dom"],
+    "lib": [
+      "es6",
+      "dom"
+    ],
     "module": "commonjs",
     "moduleResolution": "node",
     "noEmitHelpers": true,
