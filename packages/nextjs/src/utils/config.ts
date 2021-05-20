@@ -25,86 +25,141 @@ type WebpackConfig = {
   target: string;
   context: string;
 };
-type WebpackOptions = { dev: boolean; isServer: boolean; buildId: string };
+type WebpackOptions = { dev: boolean; isServer: boolean; buildId: string; webpack: { version: string } };
 
-// For our purposes, the value for `entry` is either an object, or a function which returns such an object
-type EntryProperty = (() => Promise<EntryPropertyObject>) | EntryPropertyObject;
-// Each value in that object is either a string representing a single entry point, an array of such strings, or an
-// object containing either of those, along with other configuration options. In that third case, the entry point(s) are
-// listed under the key `import`.
-type EntryPropertyObject = PlainObject<string> | PlainObject<Array<string>> | PlainObject<EntryPointObject>;
-type EntryPointObject = { import: string | Array<string> };
-
-/**
- * Add a file to a specific element of the given `entry` webpack config property.
- *
- * @param entryProperty The existing `entry` config object
- * @param injectionPoint The key where the file should be injected
- * @param injectee The path to the injected file
- */
-const _injectFile = (entryProperty: EntryPropertyObject, injectionPoint: string, injectee: string): void => {
-  // can be a string, array of strings, or object whose `import` property is one of those two
-  let injectedInto = entryProperty[injectionPoint];
-
-  // Sometimes especially for older next.js versions it happens we don't have an entry point
-  if (!injectedInto) {
-    // eslint-disable-next-line no-console
-    console.error(`[Sentry] Can't inject ${injectee}, no entrypoint is defined.`);
-    return;
-  }
-
-  // We inject the user's client config file after the existing code so that the config file has access to
-  // `publicRuntimeConfig`. See https://github.com/getsentry/sentry-javascript/issues/3485
-  if (typeof injectedInto === 'string') {
-    injectedInto = [injectedInto, injectee];
-  } else if (Array.isArray(injectedInto)) {
-    injectedInto = [...injectedInto, injectee];
-  } else {
-    let importVal: string | string[];
-
-    if (typeof injectedInto.import === 'string') {
-      importVal = [injectedInto.import, injectee];
-    } else {
-      importVal = [...injectedInto.import, injectee];
-    }
-
-    injectedInto = {
-      ...injectedInto,
-      import: importVal,
-    };
-  }
-
-  entryProperty[injectionPoint] = injectedInto;
+// For our purposes, the value for `entry` is either an object, or a function which returns such an object. In the
+// following types, notice the difference between `EntryProperty` (the entire collection of entry points) and
+// `EntryPoint` (a single entry point)
+type EntryProperty = (() => Promise<EntryPropertyValue>) | EntryPropertyValue;
+type EntryPropertyValue = { [key: string]: EntryPointValue };
+type EntryPointValue = string | Array<string> | EntryPointDescriptor;
+type EntryPointDescriptor = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [key: string]: any;
+  // if the entry point value is an object, the files to include are listed here, in the `import` property
+  import: string | Array<string>;
 };
 
-const injectSentry = async (origEntryProperty: EntryProperty, isServer: boolean): Promise<EntryProperty> => {
+/**
+ * Do a deep merge* of the given entry point values.
+ *
+ * *All but the `library` property are deep merged.
+ *
+ * @param entryPoints An array of entry point values to merge
+ * @param isWebpack4 Boolean which controls the output format
+ * @returns A single entry point value
+ */
+const _mergeEntryPoints = (entryPoints: EntryPointValue[], isWebpack4: boolean): EntryPointValue => {
+  // Regardless of the initial form of the entries, if we're in webpack 5 we'll return an EntryPointDescriptor, and if
+  // we're in webpack 4, we'll return an array. Assume the more complicated form for the moment (and reflect it in the
+  // initial value for the merged result) because we can always simplify later (where we couldn't go the other way).
+  let mergedValue = { import: [] } as EntryPointValue;
+
+  mergedValue = entryPoints.reduce(
+    (accumulatedValue: EntryPointValue, currentValue: EntryPointValue): EntryPointDescriptor => {
+      let newAccumulatedValue = accumulatedValue as EntryPointDescriptor;
+
+      if (typeof currentValue === 'string') {
+        (newAccumulatedValue.import as string[]).push(currentValue);
+      } else if (Array.isArray(currentValue)) {
+        newAccumulatedValue.import = [...(newAccumulatedValue.import as string[]), ...currentValue];
+      }
+      // `currentValue` must be an object
+      else {
+        // `import` and `dependOn` are both values which can be either strings or string arrays, so they take a bit of
+        // extra work to merge
+        const newMaybeArrayTypeValues: { [key: string]: string[] } = {};
+
+        ['import', 'dependOn'].forEach((entryObjectOption: string) => {
+          let newOptionValue = (newAccumulatedValue[entryObjectOption] as string[]) || [];
+
+          // merge in new `dependOn` value, if it exists
+          if (currentValue[entryObjectOption]) {
+            if (typeof currentValue[entryObjectOption] === 'string') {
+              newOptionValue.push(currentValue.dependOn);
+            }
+            // being an array is the only other option, but it keeps TS happy to check
+            else if (Array.isArray(currentValue[entryObjectOption])) {
+              newOptionValue = [...newOptionValue, ...currentValue[entryObjectOption]];
+            }
+          }
+
+          // only add it in if there's actual stuff there
+          if (newOptionValue.length > 0) {
+            newMaybeArrayTypeValues[entryObjectOption] = newOptionValue;
+          }
+        });
+
+        // Note: Technically, `library` is also an option whose values have a complex format and which needs careful
+        // merging. Punting on that for the moment, and just letting the later value overwrite the earlier one for now.
+        // We can revisit this if it ever becomes a problem.
+        newAccumulatedValue = {
+          ...newAccumulatedValue,
+          ...currentValue,
+          ...newMaybeArrayTypeValues,
+        };
+      }
+
+      return newAccumulatedValue;
+    },
+
+    // initial value for the `reduce` function
+    mergedValue,
+  );
+
+  // the entry point descriptor syntax is new in webpack 5, so if we're dealing with webpack 4, we've wrapped the array
+  // of files up in an object when we shouldn't have, so pull it back out
+  if (isWebpack4) {
+    mergedValue = (mergedValue as EntryPointDescriptor).import;
+  }
+
+  return mergedValue;
+};
+
+/**
+ * Add `sentry.server.config.js` and `sentry.client.config.js` (where the user calls `Sentry.init()`) to the respective
+ * bundles.
+ *
+ * @param origEntryProperty The incoming `entry` webpack config option
+ * @param isServer Boolean reflecting whether we're building server bundles or client bundles
+ * @param isWebpack4 Boolean controling the format of the results on the client side
+ * @returns The modified `entry` property, with sentry startup code injected
+ */
+const injectSentry = async (
+  origEntryProperty: EntryProperty,
+  isServer: boolean,
+  isWebpack4: boolean,
+): Promise<EntryProperty> => {
   // The `entry` entry in a webpack config can be a string, array of strings, object, or function. By default, nextjs
   // sets it to an async function which returns the promise of an object of string arrays. Because we don't know whether
   // someone else has come along before us and changed that, we need to check a few things along the way. The one thing
   // we know is that it won't have gotten *simpler* in form, so we only need to worry about the object and function
   // options. See https://webpack.js.org/configuration/entry-context/#entry.
+
   let newEntryProperty = origEntryProperty;
   if (typeof origEntryProperty === 'function') {
     newEntryProperty = await origEntryProperty();
   }
-  newEntryProperty = newEntryProperty as EntryPropertyObject;
-  // Add a new element to the `entry` array, we force webpack to create a bundle out of the user's
-  // `sentry.server.config.js` file and output it to `SERVER_INIT_LOCATION`. (See
-  // https://webpack.js.org/guides/code-splitting/#entry-points.) We do this so that the user's config file is run
-  // through babel (and any other processors through which next runs the rest of the user-provided code - pages, API
-  // routes, etc.). Specifically, we need any ESM-style `import` code to get transpiled into ES5, so that we can call
-  // `require()` on the resulting file when we're instrumenting the sesrver. (We can't use a dynamic import there
-  // because that then forces the user into a particular TS config.)
+  newEntryProperty = newEntryProperty as EntryPropertyValue;
+
   if (isServer) {
+    // By adding a new element to the `entry` array, we force webpack to create a bundle out of the user's
+    // `sentry.server.config.js` file and output it to `SERVER_INIT_LOCATION`. (See
+    // https://webpack.js.org/guides/code-splitting/#entry-points.) We do this so that the user's config file is run
+    // through babel (and any other processors through which next runs the rest of the user-provided code - pages, API
+    // routes, etc.). Specifically, we need any ESM-style `import` code to get transpiled into ES5, so that we can call
+    // `require()` on the resulting file when we're instrumenting the sesrver. (We can't use a dynamic import there
+    // because that then forces the user into a particular TS config.)
     newEntryProperty[SERVER_SDK_INIT_PATH] = SENTRY_SERVER_CONFIG_FILE;
-  }
-  // On the client, it's sufficient to inject it into the `main` JS code, which is included in every browser page.
-  else {
-    _injectFile(newEntryProperty, 'main', SENTRY_CLIENT_CONFIG_FILE);
-  }
-  // TODO: hack made necessary because the async-ness of this function turns our object back into a promise, meaning the
-  // internal `next` code which should do this doesn't
-  if ('main.js' in newEntryProperty) {
+  } else {
+    // On the client, it's sufficient to inject it into the `main` JS code, which is included in every browser page. We
+    // also merge in (and then delete) the legacy entry at `main.js`, since our doing all of this prevents `next` from
+    // doing the same thing. See
+    // https://github.com/vercel/next.js/blob/25096df801c121c6e96268422b84af2a4a907888/packages/next/build/webpack-config.ts#L1607-L1632
+    newEntryProperty['main'] = _mergeEntryPoints(
+      [newEntryProperty['main.js'], newEntryProperty['main'], SENTRY_CLIENT_CONFIG_FILE],
+      isWebpack4,
+    );
     delete newEntryProperty['main.js'];
   }
   return newEntryProperty;
@@ -176,7 +231,11 @@ export function withSentryConfig(
 
     // Inject user config files (`sentry.client.confg.js` and `sentry.server.config.js`), which is where `Sentry.init()`
     // is called. By adding them here, we ensure that they're bundled by webpack as part of both server code and client code.
-    newConfig.entry = (injectSentry(newConfig.entry, options.isServer) as unknown) as EntryProperty;
+    newConfig.entry = (injectSentry(
+      newConfig.entry,
+      options.isServer,
+      options.webpack.version.startsWith('4'),
+    ) as unknown) as EntryProperty;
 
     // Add the Sentry plugin, which uploads source maps to Sentry when not in dev
     newConfig.plugins.push(
