@@ -169,6 +169,8 @@ export function withSentryConfig(
     return newConfig;
   };
 
+  console.log("********* I'm definitely in the branch *************");
+
   return {
     ...providedExports,
     productionBrowserSourceMaps: true,
