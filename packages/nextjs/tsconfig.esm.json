@@ -46,7 +46,8 @@
       ]
     },
     "noErrorTruncation": true,
-    "outDir": "esm"
+    "outDir": "esm",
+    "jsx": "react",
   },
   "include": [
     "src/**/*"

@@ -46,7 +46,8 @@
       ]
     },
     "noErrorTruncation": true,
-    "outDir": "dist"
+    "outDir": "dist",
+    "jsx": "react",
   },
   "include": [
     "src/**/*.ts"
