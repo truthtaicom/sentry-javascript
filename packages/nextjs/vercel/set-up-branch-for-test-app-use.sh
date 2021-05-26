@@ -6,7 +6,10 @@ NEXTJS_SDK_DIR=$(pwd)
 cd ../..
 
 # make sure we're dealing with a clean repo
-git stash -u
+STASHED_CHANGES=$(git status --porcelain)
+if [ -n "${STASHED_CHANGES}" ]; then
+  git stash -u
+fi
 
 # get rid of irrelevant packages to speed up deploy process and commit the result
 for package in "angular" "ember" "eslint-config-sdk" "eslint-plugin-sdk" "gatsby" "serverless" "vue" "wasm"; do
@@ -16,7 +19,9 @@ done
 git add .
 git commit -m "delete unneeded packages"
 
-# restore working directory
-git stash pop
+# restore working directory, if necessary
+if [ -n "${STASHED_CHANGES}" ]; then
+  git stash pop
+fi
 
 cd $NEXTJS_SDK_DIR

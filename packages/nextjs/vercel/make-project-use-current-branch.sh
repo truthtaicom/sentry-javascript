@@ -8,7 +8,10 @@ BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
 cd $TEST_APP_DIR
 
 # make sure we're dealing with a clean repo
-git stash -u
+STASHED_CHANGES=$(git status --porcelain)
+if [ -n "${STASHED_CHANGES}" ]; then
+  git stash -u
+fi
 
 rm -rf .sentry
 mkdir .sentry
@@ -20,8 +23,10 @@ echo "export BRANCH_NAME=${BRANCH_NAME}" >>.sentry/set-branch-name.sh
 git add .
 git commit -m "add scripts for using ${BRANCH_NAME} branch of @sentry/nextjs"
 
-# put things back how they were
-git stash pop
+# restore working directory, if necessary
+if [ -n "${STASHED_CHANGES}" ]; then
+  git stash pop
+fi
 
 cd $NEXTJS_SDK_DIR
 
