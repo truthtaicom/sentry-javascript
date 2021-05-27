@@ -1,5 +1,7 @@
 # SET UP BRANCH FOR USE IN VERCEL-DEPLOYED TEST APPS
 
+echo " "
+
 NEXTJS_SDK_DIR=$(pwd)
 
 # cd into repo root
@@ -8,28 +10,38 @@ cd ../..
 # make sure we're dealing with a clean repo
 STASHED_CHANGES=$(git status --porcelain)
 if [ -n "${STASHED_CHANGES}" ]; then
-  git stash -u
+  echo "Found uncommitted changes. Stashing them."
+  git stash --quiet --include-untracked
 fi
 
-# if this hasn't already been done, get rid of irrelevant packages to speed up deploy process and then commit the result
+# if this hasn't already been done, get rid of irrelevant packages to speed up deploy process
 PACKAGES_DELETED=false
 for package in "angular" "ember" "eslint-config-sdk" "eslint-plugin-sdk" "gatsby" "serverless" "vue" "wasm"; do
   if [ -d packages/${package} ]; then
-    echo "deleting ${package}"
+    echo "Deleting ${package}"
     rm -rf packages/${package}
     PACKAGES_DELETED=true
   fi
 done
 
-if [ $PACKAGES_DELETED = true ]; then
-  echo "committing deletions"
+echo " "
+
+# if we deleted anything, commit the result
+if [ "$PACKAGES_DELETED" = true ]; then
+  echo "Committing deletions. Don't forget to push this commit before you deploy."
   git add .
   git commit -m "delete unneeded packages"
+else
+  echo "Branch already set up for vercel deployment"
 fi
 
 # restore working directory, if necessary
 if [ -n "${STASHED_CHANGES}" ]; then
-  git stash pop
+  echo " "
+  echo "Restoring changes from earlier stash:"
+  git stash pop --quiet
+  git status --porcelain
+  echo " "
 fi
 
 cd $NEXTJS_SDK_DIR
