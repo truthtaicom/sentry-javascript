@@ -2,8 +2,6 @@
 
 # CUSTOM INSTALL COMMAND FOR PROJECT ON VERCEL: yarn && source .sentry/install-sentry-from-branch.sh
 
-echo $SHELL
-
 PROJECT_DIR=$(pwd)
 
 # set BRANCH_NAME as an environment variable
@@ -33,7 +31,7 @@ rm -rf node_modules/@sentry/*
 # hit it before it hits the main `node_modules`, so even if there are duplicate packages, we know we'll get the right
 # version.
 echo "cp -r -L sentry-javascript/node_modules/ node_modules/@sentry"
-cp -r sentry-javascript/node_modules/ node_modules/@sentry
+cp -r -L sentry-javascript/node_modules/ node_modules/@sentry
 
 # The now-materialzed built packages are currently in `<project-root>/node_modules/@sentry/node_modules/@sentry`, but
 # where we really want them is `<project-root>/node_modules/@sentry`, since that's where the originals we deleted were
