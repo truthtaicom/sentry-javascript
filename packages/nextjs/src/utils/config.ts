@@ -219,7 +219,7 @@ export function withSentryConfig(
     // be usable in code running in the browser, but it can cause build problems. We know that we're only using those
     // modules in server-side code, so it's safe to turn off the polyfills.)
     const isWebpack5Plus = isAtLeastWebpack5(options);
-    handleNodeBuiltIns(newConfig, ['fs'], isWebpack5Plus);
+    handleNodeBuiltIns(newConfig, ['fs', 'child_process'], isWebpack5Plus);
 
     console.log(newConfig);
 
