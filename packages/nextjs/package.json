@@ -56,7 +56,7 @@
     "test:watch": "jest --watch",
     "pack": "npm pack",
     "vercel:branch": "source vercel/set-up-branch-for-test-app-use.sh",
-    "vercel:testapp": "source vercel/make-project-use-current-branch.sh"
+    "vercel:project": "source vercel/make-project-use-current-branch.sh"
   },
   "volta": {
     "extends": "../../package.json"
