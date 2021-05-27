@@ -13,6 +13,9 @@ cd sentry-javascript
 git checkout $BRANCH_NAME
 yarn --prod false
 yarn build:es5
+
+ls -l node_modules/@sentry
+
 cd $PROJECT_DIR
 
 # for abs_package_path in ${PROJECT_DIR}/sentry-javascript/packages/*; do
@@ -49,3 +52,8 @@ for package in "cli" "webpack-plugin"; do
   cd $PROJECT_DIR
   yarn link "@sentry/$package"
 done
+
+ls -l node_modules/@sentry
+echo " "
+ls -l ../../../.config/yarn/link/@sentry
+exit 1
