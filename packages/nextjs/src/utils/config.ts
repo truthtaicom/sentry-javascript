@@ -144,6 +144,8 @@ export function withSentryConfig(
     ignore: ['.next/cache', 'server/ssr-module-cache.js', 'static/*/_ssgManifest.js', 'static/*/_buildManifest.js'],
   });
 
+  console.log('PROVIDED_EXPORTS', providedExports);
+
   // warn if any of the default options for the webpack plugin are getting overridden
   const sentryWebpackPluginOptionOverrides = Object.keys(defaultSentryWebpackPluginOptions)
     .concat('dryrun')
@@ -164,6 +166,10 @@ export function withSentryConfig(
       const projectDir = config.context;
       setRuntimeEnvVars(projectDir, { SENTRY_SERVER_INIT_PATH: serverSDKInitOutputPath });
     }
+
+    // @ts-ignore testing
+    console.log('WEBPACK CONFIG.node', config.node);
+    console.log('WEBPACK CONFIG', config);
 
     let newConfig = config;
 
