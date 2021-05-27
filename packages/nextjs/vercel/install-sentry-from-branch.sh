@@ -37,6 +37,8 @@ cp -r sentry-javascript/node_modules/ node_modules/@sentry
 echo "mv node_modules/@sentry/node_modules/@sentry/* node_modules/@sentry"
 mv node_modules/@sentry/node_modules/@sentry/* node_modules/@sentry
 
+ls -l node_modules/@sentry
+
 # # The final step is to delete the now-empty
 # echo "rm -rf node_modules/@sentry"
 # rm -rf node_modules/@sentry
