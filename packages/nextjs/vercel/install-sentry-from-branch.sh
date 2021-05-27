@@ -21,6 +21,12 @@ cd $PROJECT_DIR
 for abs_package_path in sentry-javascript/packages/*; do
   package=$(basename $abs_package_path)
 
+  # this one will error out because it's not called @sentry/typescript, it's
+  # called @sentry-internal/typescript, but we don't need it, so just move on
+  if [ "$package" = "typescript" ]; then
+    continue
+  fi
+
   echo " "
   echo "Linking @sentry/${package}"
 
