@@ -2,6 +2,8 @@
 
 # CUSTOM INSTALL COMMAND FOR PROJECT ON VERCEL: yarn && source .sentry/install-sentry-from-branch.sh
 
+echo $SHELL
+
 PROJECT_DIR=$(pwd)
 
 # set BRANCH_NAME as an environment variable
