@@ -12,7 +12,7 @@ git clone https://github.com/getsentry/sentry-javascript.git
 cd sentry-javascript
 git checkout $BRANCH_NAME
 yarn --prod false
-yarn build
+yarn build:es5
 cd $PROJECT_DIR
 
 # for abs_package_path in ${PROJECT_DIR}/sentry-javascript/packages/*; do
