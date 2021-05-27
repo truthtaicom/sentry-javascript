@@ -12,14 +12,7 @@ git clone https://github.com/getsentry/sentry-javascript.git
 cd sentry-javascript
 git checkout $BRANCH_NAME
 yarn --prod false
-ls -l node_modules/@sentry
-echo " "
-ls -l node_modules/@sentry/browser/node_modules
-
 yarn build:es5
-
-ls -l node_modules/@sentry
-
 cd $PROJECT_DIR
 
 # for abs_package_path in ${PROJECT_DIR}/sentry-javascript/packages/*; do
@@ -56,7 +49,3 @@ for package in "cli" "webpack-plugin"; do
   cd $PROJECT_DIR
   yarn link "@sentry/$package"
 done
-
-ls -l node_modules/@sentry
-echo " "
-ls -l node_modules/@sentry/browser/node_modules
