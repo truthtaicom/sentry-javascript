@@ -138,8 +138,8 @@ function isAtLeastWebpack5(options: WebpackOptions): boolean {
  * @param isWebpack5Plus Boolean controlling where in the config modifications are made
  */
 function handleNodeBuiltIns(config: WebpackConfig, builtIns: string[], isWebpack5Plus: boolean): void {
-  const newValue: { [key: string]: boolean } = {};
-  builtIns.map(moduleName => (newValue[moduleName] = false));
+  const newValue: { [key: string]: string | boolean } = {};
+  builtIns.map(moduleName => (newValue[moduleName] = isWebpack5Plus ? false : 'empty'));
 
   if (!isWebpack5Plus) {
     config.node = { ...config.node, ...newValue };
