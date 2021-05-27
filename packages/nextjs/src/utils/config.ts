@@ -134,19 +134,29 @@ function isAtLeastWebpack5(options: WebpackOptions): boolean {
  * Prevent webpack from attempting to polyfill certain built-in Node modules.
  *
  * @param config The existing webpack config
- * @param builtIns The names of the modules whose polyfills we want to prevent
+ * @param newValues The names of the modules whose polyfills we want to prevent, mapped to the correct value to turn
+ * them off, either `"empty"` or `false`
  * @param isWebpack5Plus Boolean controlling where in the config modifications are made
  */
-function handleNodeBuiltIns(config: WebpackConfig, builtIns: string[], isWebpack5Plus: boolean): void {
-  const newValue: { [key: string]: string | boolean } = {};
-  builtIns.map(moduleName => (newValue[moduleName] = isWebpack5Plus ? false : 'empty'));
+function handleNodeBuiltIns(
+  config: WebpackConfig,
+  newValues: { [key: string]: string | boolean },
+  isWebpack5Plus: boolean,
+): void {
+  // const newValue: { [key: string]: string | boolean } = {};
+  // newValues.map(moduleName => (newValue[moduleName] = isWebpack5Plus ? false : 'empty'));
 
   if (!isWebpack5Plus) {
-    config.node = { ...config.node, ...newValue };
+    config.node = { ...config.node, ...newValues };
+    // config.node = { ...config.node, ...newValue };
   } else {
+    // in webpack 5 and above, these all need to be booleans
+    Object.keys(newValues).forEach(key => (newValues[key] = false));
+
     config.resolve = {
       ...config.resolve,
-      fallback: { ...config.resolve?.fallback, ...newValue },
+      fallback: { ...config.resolve?.fallback, ...newValues },
+      // fallback: { ...config.resolve?.fallback, ...newValue },
     };
   }
 }
@@ -219,7 +229,7 @@ export function withSentryConfig(
     // be usable in code running in the browser, but it can cause build problems. We know that we're only using those
     // modules in server-side code, so it's safe to turn off the polyfills.)
     const isWebpack5Plus = isAtLeastWebpack5(options);
-    handleNodeBuiltIns(newConfig, ['fs', 'child_process', 'console'], isWebpack5Plus);
+    handleNodeBuiltIns(newConfig, { fs: 'empty', child_process: 'empty', console: false }, isWebpack5Plus);
 
     // Inject user config files (`sentry.client.confg.js` and `sentry.server.config.js`), which is where `Sentry.init()`
     // is called. By adding them here, we ensure that they're bundled by webpack as part of both server code and client code.
