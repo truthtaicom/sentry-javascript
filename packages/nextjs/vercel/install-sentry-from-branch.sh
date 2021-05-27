@@ -2,18 +2,24 @@
 
 # CUSTOM INSTALL COMMAND FOR PROJECT ON VERCEL: yarn && source .sentry/install-sentry-from-branch.sh
 
-local PROJECT_DIR=$(pwd)
+PROJECT_DIR=$(pwd)
 
+# set BRANCH_NAME as an environment variable
 source .sentry/set-branch-name.sh
-git clone https://github.com/getsentry/sentry-javascript#${BRANCH_NAME}
+
+# clone and build the SDK
+git clone https://github.com/getsentry/sentry-javascript.git
 cd sentry-javascript
+git checkout $BRANCH_NAME
 yarn --prod false
 yarn build
 cd $PROJECT_DIR
 
 # for abs_package_path in ${PROJECT_DIR}/sentry-javascript/packages/*; do
+
+# link the built packages into project dependencies
 for abs_package_path in sentry-javascript/packages/*; do
-  local package=$(basename $abs_package_path)
+  package=$(basename $abs_package_path)
 
   echo " "
   echo "Linking @sentry/${package}"
