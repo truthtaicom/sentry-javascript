@@ -219,9 +219,7 @@ export function withSentryConfig(
     // be usable in code running in the browser, but it can cause build problems. We know that we're only using those
     // modules in server-side code, so it's safe to turn off the polyfills.)
     const isWebpack5Plus = isAtLeastWebpack5(options);
-    handleNodeBuiltIns(newConfig, ['fs', 'child_process'], isWebpack5Plus);
-
-    console.log(newConfig);
+    handleNodeBuiltIns(newConfig, ['fs', 'child_process', 'console'], isWebpack5Plus);
 
     // Inject user config files (`sentry.client.confg.js` and `sentry.server.config.js`), which is where `Sentry.init()`
     // is called. By adding them here, we ensure that they're bundled by webpack as part of both server code and client code.
