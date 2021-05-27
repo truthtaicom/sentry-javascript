@@ -2,15 +2,21 @@
 # CALL THIS WITH PATH-TO-TEST-APP AS THE FIRST/ONLY ARGUMENT
 
 NEXTJS_SDK_DIR=$(pwd)
-TEST_APP_DIR=$1
+PROJECT_DIR=$1
 SDK_BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
+
+if [ ! -n "${PROJECT_DIR}" ]; then
+  echo " "
+  echo "ERROR: Missing project directory. Please supply the path to your project as an argument to the command."
+  exit 1
+fi
 
 # make sure branch is already set up
 echo " "
 echo "Making sure branch is set up for vercel deployment."
 yarn vercel:branch
 
-cd $TEST_APP_DIR
+cd $PROJECT_DIR
 
 # make sure we're dealing with a clean repo
 STASHED_CHANGES=$(git status --porcelain)
