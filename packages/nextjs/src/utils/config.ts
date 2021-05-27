@@ -24,8 +24,10 @@ type WebpackConfig = {
   output: { path: string };
   target: string;
   context: string;
+  resolve?: { fallback: { [key: string]: string | boolean } };
+  node?: { [key: string]: string | boolean };
 };
-type WebpackOptions = { dev: boolean; isServer: boolean; buildId: string };
+type WebpackOptions = { dev: boolean; isServer: boolean; buildId: string; webpack: { version: string } };
 
 // For our purposes, the value for `entry` is either an object, or a function which returns such an object
 type EntryProperty = (() => Promise<EntryPropertyObject>) | EntryPropertyObject;
@@ -114,6 +116,41 @@ const injectSentry = async (origEntryProperty: EntryProperty, isServer: boolean)
   return newEntryProperty;
 };
 
+/**
+ * Test current webpack version
+ *
+ * @param options The options object passed to the webpack function
+ * @returns True if the webpack version is 5 or above, false otherwise
+ */
+function isAtLeastWebpack5(options: WebpackOptions): boolean {
+  try {
+    return parseInt(options.webpack.version[0]) >= 5;
+  } catch (err) {
+    return false;
+  }
+}
+
+/**
+ * Prevent webpack from attempting to polyfill certain built-in Node modules.
+ *
+ * @param config The existing webpack config
+ * @param builtIns The names of the modules whose polyfills we want to prevent
+ * @param isWebpack5Plus Boolean controlling where in the config modifications are made
+ */
+function handleNodeBuiltIns(config: WebpackConfig, builtIns: string[], isWebpack5Plus: boolean): void {
+  const newValue: { [key: string]: boolean } = {};
+  builtIns.map(moduleName => (newValue[moduleName] = false));
+
+  if (!isWebpack5Plus) {
+    config.node = { ...config.node, ...newValue };
+  } else {
+    config.resolve = {
+      ...config.resolve,
+      fallback: { ...config.resolve?.fallback, ...newValue },
+    };
+  }
+}
+
 type NextConfigExports = {
   experimental?: { plugins: boolean };
   plugins?: string[];
@@ -144,8 +181,6 @@ export function withSentryConfig(
     ignore: ['.next/cache', 'server/ssr-module-cache.js', 'static/*/_ssgManifest.js', 'static/*/_buildManifest.js'],
   });
 
-  console.log('PROVIDED_EXPORTS', providedExports);
-
   // warn if any of the default options for the webpack plugin are getting overridden
   const sentryWebpackPluginOptionOverrides = Object.keys(defaultSentryWebpackPluginOptions)
     .concat('dryrun')
@@ -167,10 +202,6 @@ export function withSentryConfig(
       setRuntimeEnvVars(projectDir, { SENTRY_SERVER_INIT_PATH: serverSDKInitOutputPath });
     }
 
-    // @ts-ignore testing
-    console.log('WEBPACK CONFIG.node', config.node);
-    console.log('WEBPACK CONFIG', config);
-
     let newConfig = config;
 
     if (typeof providedExports.webpack === 'function') {
@@ -183,6 +214,12 @@ export function withSentryConfig(
     if (!options.dev) {
       newConfig.devtool = 'source-map';
     }
+
+    // Prevent webpack from trying to polyfill certain built-in Node modules. (It does this in order that those modules
+    // be usable in code running in the browser, but it can cause build problems. We know that we're only using those
+    // modules in server-side code, so it's safe to turn off the polyfills.)
+    const isWebpack5Plus = isAtLeastWebpack5(options);
+    handleNodeBuiltIns(newConfig, ['fs'], isWebpack5Plus);
 
     // Inject user config files (`sentry.client.confg.js` and `sentry.server.config.js`), which is where `Sentry.init()`
     // is called. By adding them here, we ensure that they're bundled by webpack as part of both server code and client code.
