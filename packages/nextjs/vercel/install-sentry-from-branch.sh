@@ -26,12 +26,13 @@ rm -rf node_modules/@sentry/*
 # cd node_modules/@sentry
 
 # In `sentry-javascript/node_modules/@sentry`, all packages aside from `cli` and `webpack-plugin` are symlinks to the
-# built packages in `sentry-javascript/packages`. Copying follows the symlinks and you end up with copies of the real
-# versions of said packages rather than copies of the symlinks. We also know that `sentry-javascript/node_modules` has
-# every dependency we need, so copying the entire `node_modules` directory kilss two birds with one stone. By putting it
-# in `<project-root>/node_modules/@sentry`, we guarantee that the resolver will hit it before it hits the main
-# `node_modules`, so even if there are duplicate packages, we know we'll get the right version.
-echo "cp -r sentry-javascript/node_modules/ node_modules/@sentry"
+# built packages in `sentry-javascript/packages`. Copying using `-L` follows the symlinks and you end up with copies of
+# the real versions of said packages rather than copies of the symlinks. We also know that
+# `sentry-javascript/node_modules` has every dependency we need, so copying the entire `node_modules` directory kilss
+# two birds with one stone. By putting it in `<project-root>/node_modules/@sentry`, we guarantee that the resolver will
+# hit it before it hits the main `node_modules`, so even if there are duplicate packages, we know we'll get the right
+# version.
+echo "cp -r -L sentry-javascript/node_modules/ node_modules/@sentry"
 cp -r sentry-javascript/node_modules/ node_modules/@sentry
 
 # The now-materialzed built packages are currently in `<project-root>/node_modules/@sentry/node_modules/@sentry`, but
