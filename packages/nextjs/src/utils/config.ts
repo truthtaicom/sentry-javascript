@@ -221,6 +221,8 @@ export function withSentryConfig(
     const isWebpack5Plus = isAtLeastWebpack5(options);
     handleNodeBuiltIns(newConfig, ['fs'], isWebpack5Plus);
 
+    console.log(newConfig);
+
     // Inject user config files (`sentry.client.confg.js` and `sentry.server.config.js`), which is where `Sentry.init()`
     // is called. By adding them here, we ensure that they're bundled by webpack as part of both server code and client code.
     newConfig.entry = (injectSentry(newConfig.entry, options.isServer) as unknown) as EntryProperty;
