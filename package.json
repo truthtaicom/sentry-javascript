@@ -6,6 +6,7 @@
     "build:esm": "lerna run --stream --concurrency 1 --sort build:esm",
     "build:watch": "lerna run --parallel build:watch",
     "clean": "lerna run --parallel clean && lerna clean --yes",
+    "clean:all": "lerna run --parallel clean && lerna clean --yes && rm -rf node_modules",
     "fix": "lerna run --parallel fix",
     "link:yarn": "lerna run --stream --concurrency 1 link:yarn",
     "lint": "lerna run --parallel lint",

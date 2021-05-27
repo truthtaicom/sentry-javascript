@@ -12,6 +12,10 @@ git clone https://github.com/getsentry/sentry-javascript.git
 cd sentry-javascript
 git checkout $BRANCH_NAME
 yarn --prod false
+ls -l node_modules/@sentry
+echo " "
+ls -l node_modules/@sentry/browser/node_modules
+
 yarn build:es5
 
 ls -l node_modules/@sentry
@@ -55,5 +59,4 @@ done
 
 ls -l node_modules/@sentry
 echo " "
-ls -l ../../../.config/yarn/link/@sentry
-exit 1
+ls -l node_modules/@sentry/browser/node_modules
