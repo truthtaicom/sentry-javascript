@@ -253,8 +253,8 @@ function createNewWebpackConfig(
     const isWebpack5Plus = isAtLeastWebpack5(options);
     handleNodeBuiltIns(
       newConfig,
-      // {},
-      { fs: 'empty', child_process: 'empty', console: 'mock', net: 'empty', tls: 'empty' },
+      {},
+      // { fs: 'empty', child_process: 'empty', console: 'mock', net: 'empty', tls: 'empty' },
       isWebpack5Plus,
     );
 
