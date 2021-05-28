@@ -5,6 +5,17 @@ import * as SentryWebpackPlugin from '@sentry/webpack-plugin';
 import * as fs from 'fs';
 import * as path from 'path';
 
+// TODO: merge in `main.js` entry contents before deleting it- MOOT!
+// TODO: merge default SentryWebpackPlugin ignore with their SentryWebpackPlugin ignore or ignoreFile
+// TODO: merge default SentryWebpackPlugin include with their SentryWebpackPlugin include
+// TODO: drop merged keys from override check? `includeDefaults` option?
+// TODO: handle case where providedExports is a function
+// TODO: handle case where providedWebpackExport is an object
+
+// TODO: move getSentryRelease to utils -> process?.env?.etc
+
+Error.stackTraceLimit = 1000;
+
 const SENTRY_CLIENT_CONFIG_FILE = './sentry.client.config.js';
 const SENTRY_SERVER_CONFIG_FILE = './sentry.server.config.js';
 // this is where the transpiled/bundled version of `USER_SERVER_CONFIG_FILE` will end up
@@ -55,6 +66,8 @@ const _injectFile = (entryProperty: EntryPropertyObject, injectionPoint: string,
     return;
   }
 
+  debugger;
+
   // We inject the user's client config file after the existing code so that the config file has access to
   // `publicRuntimeConfig`. See https://github.com/getsentry/sentry-javascript/issues/3485
   if (typeof injectedInto === 'string') {
@@ -79,7 +92,7 @@ const _injectFile = (entryProperty: EntryPropertyObject, injectionPoint: string,
   entryProperty[injectionPoint] = injectedInto;
 };
 
-const injectSentry = async (origEntryProperty: EntryProperty, isServer: boolean): Promise<EntryProperty> => {
+const injectSentry = async (origEntryProperty: EntryProperty, isServer: boolean): Promise<EntryPropertyObject> => {
   // The `entry` entry in a webpack config can be a string, array of strings, object, or function. By default, nextjs
   // sets it to an async function which returns the promise of an object of string arrays. Because we don't know whether
   // someone else has come along before us and changed that, we need to check a few things along the way. The one thing
@@ -108,11 +121,7 @@ const injectSentry = async (origEntryProperty: EntryProperty, isServer: boolean)
   else {
     _injectFile(newEntryProperty, 'main', SENTRY_CLIENT_CONFIG_FILE);
   }
-  // TODO: hack made necessary because the async-ness of this function turns our object back into a promise, meaning the
-  // internal `next` code which should do this doesn't
-  if ('main.js' in newEntryProperty) {
-    delete newEntryProperty['main.js'];
-  }
+
   return newEntryProperty;
 };
 
@@ -143,12 +152,8 @@ function handleNodeBuiltIns(
   newValues: { [key: string]: string | boolean },
   isWebpack5Plus: boolean,
 ): void {
-  // const newValue: { [key: string]: string | boolean } = {};
-  // newValues.map(moduleName => (newValue[moduleName] = isWebpack5Plus ? false : 'empty'));
-
   if (!isWebpack5Plus) {
     config.node = { ...config.node, ...newValues };
-    // config.node = { ...config.node, ...newValue };
   } else {
     // in webpack 5 and above, these all need to be booleans
     Object.keys(newValues).forEach(key => (newValues[key] = false));
@@ -156,7 +161,6 @@ function handleNodeBuiltIns(
     config.resolve = {
       ...config.resolve,
       fallback: { ...config.resolve?.fallback, ...newValues },
-      // fallback: { ...config.resolve?.fallback, ...newValue },
     };
   }
 }
@@ -179,6 +183,24 @@ export function withSentryConfig(
   providedExports: NextConfigExports = {},
   providedSentryWebpackPluginOptions: Partial<SentryCliPluginOptions> = {},
 ): NextConfigExports {
+  return {
+    ...providedExports,
+    productionBrowserSourceMaps: true,
+    webpack: createNewWebpackConfig(providedExports.webpack, providedSentryWebpackPluginOptions),
+  };
+}
+
+/**
+ *
+ *
+ * @param [providedExports={}]
+ * @param [providedSentryWebpackPluginOptions={}]
+ * @returns
+ */
+function createNewWebpackConfig(
+  providedWebpackExport: WebpackExport | undefined,
+  providedSentryWebpackPluginOptions: Partial<SentryCliPluginOptions> = {},
+): WebpackExport {
   const defaultSentryWebpackPluginOptions = dropUndefinedKeys({
     url: process.env.SENTRY_URL,
     org: process.env.SENTRY_ORG,
@@ -214,8 +236,8 @@ export function withSentryConfig(
 
     let newConfig = config;
 
-    if (typeof providedExports.webpack === 'function') {
-      newConfig = providedExports.webpack(config, options);
+    if (typeof providedWebpackExport === 'function') {
+      newConfig = providedWebpackExport(config, options);
     }
 
     // Ensure quality source maps in production. (Source maps aren't uploaded in dev, and besides, Next doesn't let you
@@ -238,9 +260,15 @@ export function withSentryConfig(
 
     console.log(newConfig.node);
 
-    // Inject user config files (`sentry.client.confg.js` and `sentry.server.config.js`), which is where `Sentry.init()`
-    // is called. By adding them here, we ensure that they're bundled by webpack as part of both server code and client code.
-    newConfig.entry = (injectSentry(newConfig.entry, options.isServer) as unknown) as EntryProperty;
+    // Tell webpack to inject user config files (containing the two `Sentry.init()` calls) into the appropriate output
+    // bundles. Store a separate reference to the original `entry` value to avoid an infinite loop. (In a synchronous
+    // world, `x = () => f(x)` is fine, because the dereferencing is guaranteed to happen before the assignment, meaning
+    // we know f will get the original value of x. But in an async world, if we do `x = async () => f(x)`, the
+    // assignment happens *before* the dereferencing, meaning f is passed the new value. In other words, in that
+    // scenario, the new value is defined in terms of itself, with predictably bad consequences. Theoretically this
+    // could also be fixed by using `bind`, but this is way simpler.)
+    const origEntryProperty = newConfig.entry;
+    newConfig.entry = () => injectSentry(origEntryProperty, options.isServer);
 
     // Add the Sentry plugin, which uploads source maps to Sentry when not in dev
     newConfig.plugins.push(
@@ -248,6 +276,7 @@ export function withSentryConfig(
       new ((SentryWebpackPlugin as unknown) as typeof defaultWebpackPlugin)({
         dryRun: options.dev,
         release: getSentryRelease(options.buildId),
+        entries: (_: string) => false,
         ...defaultSentryWebpackPluginOptions,
         ...providedSentryWebpackPluginOptions,
       }),
@@ -256,11 +285,7 @@ export function withSentryConfig(
     return newConfig;
   };
 
-  return {
-    ...providedExports,
-    productionBrowserSourceMaps: true,
-    webpack: newWebpackExport,
-  };
+  return newWebpackExport;
 }
 
 /**
