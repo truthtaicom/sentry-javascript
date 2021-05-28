@@ -13,7 +13,7 @@ git clone https://github.com/getsentry/sentry-javascript.git
 cd sentry-javascript
 git checkout $BRANCH_NAME
 yarn --prod false
-yarn build:es5
+yarn build:esm
 cd $PROJECT_DIR
 
 yarn add file:sentry-javascript/packages/nextjs
