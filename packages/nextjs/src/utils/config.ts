@@ -35,10 +35,11 @@ type WebpackConfig = {
   output: { path: string };
   target: string;
   context: string;
-  resolve?: { fallback: { [key: string]: string | boolean } };
-  node?: { [key: string]: string | boolean };
+  // resolve?: { fallback: { [key: string]: string | boolean } };
+  // node?: { [key: string]: string | boolean };
 };
-type WebpackOptions = { dev: boolean; isServer: boolean; buildId: string; webpack: { version: string } };
+type WebpackOptions = { dev: boolean; isServer: boolean; buildId: string };
+// type WebpackOptions = { dev: boolean; isServer: boolean; buildId: string; webpack: { version: string } };
 
 // For our purposes, the value for `entry` is either an object, or a function which returns such an object
 type EntryProperty = (() => Promise<EntryPropertyObject>) | EntryPropertyObject;
@@ -125,45 +126,45 @@ const injectSentry = async (origEntryProperty: EntryProperty, isServer: boolean)
   return newEntryProperty;
 };
 
-/**
- * Test current webpack version
- *
- * @param options The options object passed to the webpack function
- * @returns True if the webpack version is 5 or above, false otherwise
- */
-function isAtLeastWebpack5(options: WebpackOptions): boolean {
-  try {
-    return parseInt(options.webpack.version[0]) >= 5;
-  } catch (err) {
-    return false;
-  }
-}
+// /**
+//  * Test current webpack version
+//  *
+//  * @param options The options object passed to the webpack function
+//  * @returns True if the webpack version is 5 or above, false otherwise
+//  */
+// function isAtLeastWebpack5(options: WebpackOptions): boolean {
+//   try {
+//     return parseInt(options.webpack.version[0]) >= 5;
+//   } catch (err) {
+//     return false;
+//   }
+// }
 
-/**
- * Prevent webpack from attempting to polyfill certain built-in Node modules.
- *
- * @param config The existing webpack config
- * @param newValues The names of the modules whose polyfills we want to prevent, mapped to the correct value to turn
- * them off, either `"empty"` or `false`
- * @param isWebpack5Plus Boolean controlling where in the config modifications are made
- */
-function handleNodeBuiltIns(
-  config: WebpackConfig,
-  newValues: { [key: string]: string | boolean },
-  isWebpack5Plus: boolean,
-): void {
-  if (!isWebpack5Plus) {
-    config.node = { ...config.node, ...newValues };
-  } else {
-    // in webpack 5 and above, these all need to be booleans
-    Object.keys(newValues).forEach(key => (newValues[key] = false));
+// /**
+//  * Prevent webpack from attempting to polyfill certain built-in Node modules.
+//  *
+//  * @param config The existing webpack config
+//  * @param newValues The names of the modules whose polyfills we want to prevent, mapped to the correct value to turn
+//  * them off, either `"empty"` or `false`
+//  * @param isWebpack5Plus Boolean controlling where in the config modifications are made
+//  */
+// function handleNodeBuiltIns(
+//   config: WebpackConfig,
+//   newValues: { [key: string]: string | boolean },
+//   isWebpack5Plus: boolean,
+// ): void {
+//   if (!isWebpack5Plus) {
+//     config.node = { ...config.node, ...newValues };
+//   } else {
+//     // in webpack 5 and above, these all need to be booleans
+//     Object.keys(newValues).forEach(key => (newValues[key] = false));
 
-    config.resolve = {
-      ...config.resolve,
-      fallback: { ...config.resolve?.fallback, ...newValues },
-    };
-  }
-}
+//     config.resolve = {
+//       ...config.resolve,
+//       fallback: { ...config.resolve?.fallback, ...newValues },
+//     };
+//   }
+// }
 
 type NextConfigExports = {
   experimental?: { plugins: boolean };
@@ -247,18 +248,18 @@ function createNewWebpackConfig(
       newConfig.devtool = 'source-map';
     }
 
-    // Prevent webpack from trying to polyfill certain built-in Node modules. (It does this in order that those modules
-    // be usable in code running in the browser, but it can cause build problems. We know that we're only using those
-    // modules in server-side code, so it's safe to turn off the polyfills.)
-    const isWebpack5Plus = isAtLeastWebpack5(options);
-    handleNodeBuiltIns(
-      newConfig,
-      {},
-      // { fs: 'empty', child_process: 'empty', console: 'mock', net: 'empty', tls: 'empty' },
-      isWebpack5Plus,
-    );
+    // // Prevent webpack from trying to polyfill certain built-in Node modules. (It does this in order that those modules
+    // // be usable in code running in the browser, but it can cause build problems. We know that we're only using those
+    // // modules in server-side code, so it's safe to turn off the polyfills.)
+    // const isWebpack5Plus = isAtLeastWebpack5(options);
+    // handleNodeBuiltIns(
+    //   newConfig,
+    //   // {},
+    //   { fs: 'empty', child_process: 'empty', console: 'mock', net: 'empty', tls: 'empty' },
+    //   isWebpack5Plus,
+    // );
 
-    console.log(newConfig.node);
+    // console.log(newConfig.node);
 
     // Tell webpack to inject user config files (containing the two `Sentry.init()` calls) into the appropriate output
     // bundles. Store a separate reference to the original `entry` value to avoid an infinite loop. (In a synchronous
