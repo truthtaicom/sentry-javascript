@@ -1,10 +1,12 @@
-# SET UP BRANCH FOR USE IN VERCEL-DEPLOYED TEST APPS
+# SCRIPT TO SET UP BRANCH FOR USE IN VERCEL-DEPLOYED TEST APPS
+
+# CALL THIS WITH `yarn vercel:branch`
 
 echo " "
 
 NEXTJS_SDK_DIR=$(pwd)
 
-# cd into repo root
+# this puts us in the repo root
 cd ../..
 
 # make sure we're dealing with a clean repo

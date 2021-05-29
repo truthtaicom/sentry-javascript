@@ -1,5 +1,6 @@
-# MAKE TEST APP USE THIS BRANCH
-# CALL THIS WITH PATH-TO-TEST-APP AS THE FIRST/ONLY ARGUMENT
+# SCRIPT TO MAKE TEST APP USE THIS BRANCH
+
+# CALL THIS BY RUNNING `yarn vercel:project <path-to-project>`
 
 NEXTJS_SDK_DIR=$(pwd)
 PROJECT_DIR=$1
@@ -56,6 +57,6 @@ cd $NEXTJS_SDK_DIR
 
 echo " "
 echo "SUCCESS!"
-echo "Your project will now use this branch of the SDK repo when deployed to Vercel. If you haven't done so already, go to your project settings and set a custom install command:"
-echo "  yarn && source .sentry/install-sentry-from-branch.sh
-"
+echo "Your project will now use this branch of the SDK repo when deployed to Vercel. If you haven't done so already, go to your project settings in Vercel and set a custom install command:"
+echo "  $(source .sentry/install-sentry-from-branch.sh)"
+echo " "
