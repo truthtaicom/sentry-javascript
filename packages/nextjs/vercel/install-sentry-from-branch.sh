@@ -1,25 +1,27 @@
-# SCRIPT TO INCLUDE IN A VERCEL-DEPLOYED PROJECT SO THAT IT USES A BRANCH FROM THE SDK REPO
+# SCRIPT TO INCLUDE AS PART OF A VERCEL-DEPLOYED PROJECT, SO THAT IT USES A BRANCH FROM THE SDK REPO
+# USE `yarn vercel:project <path-to-project>` TO HAVE IT AUTOMATICALLY ADDED TO YOUR PROJECT
 
-# CUSTOM INSTALL COMMAND FOR PROJECT ON VERCEL: yarn && source .sentry/install-sentry-from-branch.sh
-# CUSTOM INSTALL COMMAND FOR PROJECT ON VERCEL: source .sentry/install-sentry-from-branch.sh && yarn
+# CUSTOM INSTALL COMMAND FOR PROJECT ON VERCEL: `source .sentry/install-sentry-from-branch.sh`
 
 PROJECT_DIR=$(pwd)
 
-# set BRANCH_NAME as an environment variable
+# Set BRANCH_NAME as an environment variable
 source .sentry/set-branch-name.sh
 
-# clone and build the SDK
 echo " "
-echo "Cloning SDK repo"
+echo "CLONING SDK REPO"
 git clone https://github.com/getsentry/sentry-javascript.git
 cd sentry-javascript
 git checkout $BRANCH_NAME
 echo "Latest commit: $(git log --format="%C(auto) %h - %s" | head -n 1)"
+
 echo " "
-echo "Installing SDK dependencies"
+echo "INSTALLING SDK DEPENDENCIES"
+# We need dev dependencies so that we can build the SDK
 yarn --prod false
+
 echo " "
-echo "Building SDK"
+echo "** BUILDING SDK **"
 yarn build:es5
 yarn build:esm
 cd $PROJECT_DIR
@@ -27,7 +29,7 @@ cd $PROJECT_DIR
 # Add built SDK as a file dependency. This has the side effect of forcing yarn to install all of the other dependencies,
 # saving us the trouble of needing to call `yarn` separately after this
 echo " "
-echo "Substituting local SDK for published one and installing project dependencies"
+echo "SUBSTITUTING LOCAL SDK FOR PUBLISHED ONE AND INSTALLING PROJECT DEPENDENCIES"
 echo "yarn add file:sentry-javascript/packages/nextjs"
 yarn add file:sentry-javascript/packages/nextjs
 
