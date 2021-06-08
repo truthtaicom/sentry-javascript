@@ -17,7 +17,28 @@ export const withSentry = (handler: NextApiHandler): WrappedNextApiHandler => {
     try {
       const currentScope = getCurrentHub().getScope();
 
-      console.log('SCOPE', currentScope);
+      // console.log('SCOPE', currentScope);
+
+      res.once('finish', async () => {
+        console.log('FINISHING TRANSACTION');
+        const transaction = getActiveTransaction();
+        if (transaction) {
+          transaction.setHttpStatus(res.statusCode);
+
+          // we'll collect this data in a more targeted way in the event processor we added above,
+          // `addRequestDataToEvent`
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          delete transaction.metadata.requestPath;
+
+          transaction.finish();
+        }
+        try {
+          await flush(2000);
+        } catch (e) {
+          console.log('FLUSH ERROR', e);
+          // no-empty
+        }
+      });
 
       if (currentScope) {
         currentScope.addEventProcessor(event => addRequestDataToEvent(event, req as NextRequest));
@@ -59,7 +80,7 @@ export const withSentry = (handler: NextApiHandler): WrappedNextApiHandler => {
         }
       }
 
-      console.log('CALLING HANDLER', req, res);
+      // console.log('CALLING HANDLER', req, res);
       return await handler(req, res); // Call Handler
     } catch (e) {
       withScope(scope => {
@@ -72,24 +93,6 @@ export const withSentry = (handler: NextApiHandler): WrappedNextApiHandler => {
         captureException(e);
       });
       throw e;
-    } finally {
-      const transaction = getActiveTransaction();
-      if (transaction) {
-        transaction.setHttpStatus(res.statusCode);
-
-        // we'll collect this data in a more targeted way in the event processor we added above,
-        // `addRequestDataToEvent`
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        delete transaction.metadata.requestPath;
-
-        transaction.finish();
-      }
-      try {
-        await flush(2000);
-      } catch (e) {
-        console.log('FLUSH ERROR', e);
-        // no-empty
-      }
     }
   };
 };
