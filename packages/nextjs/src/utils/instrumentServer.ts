@@ -223,6 +223,8 @@ function makeWrappedReqHandler(origReqHandler: ReqHandler): WrappedReqHandler {
           // name; requests to API routes could be GET, POST, PUT, etc, so do include it there
           const namePrefix = req.url.startsWith('/api') ? `${(req.method || 'GET').toUpperCase()} ` : '';
 
+          console.log('HITTING HERE');
+
           const transaction = startTransaction(
             {
               name: `${namePrefix}${reqPath}`,
