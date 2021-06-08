@@ -1,4 +1,4 @@
-import { captureException, flush, getCurrentHub, Handlers, startTransaction, withScope } from '@sentry/node';
+import { captureException, getCurrentHub, Handlers, startTransaction, withScope } from '@sentry/node';
 import { extractTraceparentData, getActiveTransaction, hasTracingEnabled } from '@sentry/tracing';
 import { addExceptionMechanism, isString, logger, stripUrlQueryAndFragment } from '@sentry/utils';
 import { NextApiHandler } from 'next';
@@ -15,7 +15,8 @@ export const withSentry = (handler: NextApiHandler): WrappedNextApiHandler => {
   // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   return async (req, res) => {
     try {
-      const currentScope = getCurrentHub().getScope();
+      const hub = getCurrentHub();
+      const currentScope = hub.getScope();
 
       // console.log('SCOPE', currentScope);
 
@@ -33,7 +34,8 @@ export const withSentry = (handler: NextApiHandler): WrappedNextApiHandler => {
           transaction.finish();
         }
         try {
-          await flush(2000);
+          console.log('CLIENT', hub.getClient());
+          await hub.getClient()?.flush(1000); //flush(2000);
         } catch (e) {
           console.log('FLUSH ERROR', e);
           // no-empty
