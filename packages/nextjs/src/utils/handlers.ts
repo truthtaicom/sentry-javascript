@@ -12,18 +12,37 @@ const { parseRequest } = Handlers;
 // purely for clarity
 type WrappedNextApiHandler = NextApiHandler;
 
+// const { resolve } = require('path');
+// const { readdir } = require('fs').promises;
+
+// @ts-ignore
+async function getFiles(dir: any): any {
+  const dirents = await fs.promises.readdir(dir, { withFileTypes: true });
+  // @ts-ignore
+  const files = await Promise.all(
+    dirents.map(dirent => {
+      const res = path.resolve(dir, dirent.name);
+      return dirent.isDirectory() ? getFiles(res) : res;
+    }),
+  );
+  return Array.prototype.concat(...files);
+}
+
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export const withSentry = (handler: NextApiHandler): WrappedNextApiHandler => {
-  console.log('/var/task/.next/server');
-  fs.readdirSync('/var/task/.next/server').forEach(file => {
-    console.log(file);
-  });
-  console.log('/var/task/.next/server/chunks');
-  fs.readdirSync('/var/task/.next/server/chunks').forEach(file => {
-    console.log(file);
-  });
-  console.log(process.env.SENTRY_SERVER_INIT_PATH);
-  require(path.resolve(process.env.SENTRY_SERVER_INIT_PATH as string));
+  getFiles('/var/task/.next')
+    .then((files: any) => console.log(files))
+    .catch((e: any) => console.error(e));
+  // console.log('/var/task/.next/server');
+  // fs.readdirSync('/var/task/.next/server').forEach(file => {
+  //   console.log(file);
+  // });
+  // console.log('/var/task/.next/server/chunks');
+  // fs.readdirSync('/var/task/.next/server/chunks').forEach(file => {
+  //   console.log(file);
+  // });
+  // console.log(process.env.SENTRY_SERVER_INIT_PATH);
+  // require(path.resolve(process.env.SENTRY_SERVER_INIT_PATH as string));
   const outerHub = getCurrentHub();
   const outerCurrentScope = outerHub.getScope();
   // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
