@@ -17,6 +17,8 @@ export const withSentry = (handler: NextApiHandler): WrappedNextApiHandler => {
     try {
       const currentScope = getCurrentHub().getScope();
 
+      console.log('SCOPE', currentScope);
+
       if (currentScope) {
         currentScope.addEventProcessor(event => addRequestDataToEvent(event, req as NextRequest));
 
@@ -57,6 +59,7 @@ export const withSentry = (handler: NextApiHandler): WrappedNextApiHandler => {
         }
       }
 
+      console.log('CALLING HANDLER', req, res);
       return await handler(req, res); // Call Handler
     } catch (e) {
       withScope(scope => {
@@ -84,6 +87,7 @@ export const withSentry = (handler: NextApiHandler): WrappedNextApiHandler => {
       try {
         await flush(2000);
       } catch (e) {
+        console.log('FLUSH ERROR', e);
         // no-empty
       }
     }
