@@ -14,7 +14,12 @@ type WrappedNextApiHandler = NextApiHandler;
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export const withSentry = (handler: NextApiHandler): WrappedNextApiHandler => {
+  console.log('/var/task/.next/server');
   fs.readdirSync('/var/task/.next/server').forEach(file => {
+    console.log(file);
+  });
+  console.log('/var/task/.next/server/chunks');
+  fs.readdirSync('/var/task/.next/server/chunks').forEach(file => {
     console.log(file);
   });
   console.log(process.env.SENTRY_SERVER_INIT_PATH);
