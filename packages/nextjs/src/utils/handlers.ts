@@ -30,7 +30,7 @@ async function getFiles(dir: any): any {
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export const withSentry = (handler: NextApiHandler): WrappedNextApiHandler => {
-  getFiles('/var/task/.next')
+  getFiles('/var/task')
     .then((files: any) => console.log(files))
     .catch((e: any) => console.error(e));
   // console.log('/var/task/.next/server');
