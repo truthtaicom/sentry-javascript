@@ -20,4 +20,6 @@ export function initAndBind<F extends Client, O extends Options>(clientClass: Cl
   hub.getScope()?.update(options.initialScope);
   const client = new clientClass(options);
   hub.bindClient(client);
+  console.log('BINDING NODE CLIENT TO HUB');
+  console.log(hub, client);
 }

@@ -18,8 +18,6 @@ export const withSentry = (handler: NextApiHandler): WrappedNextApiHandler => {
       const hub = getCurrentHub();
       const currentScope = hub.getScope();
 
-      console.log('SCOPE', currentScope);
-
       res.once('finish', async () => {
         console.log('FINISHING TRANSACTION');
         const transaction = getActiveTransaction();
@@ -84,7 +82,6 @@ export const withSentry = (handler: NextApiHandler): WrappedNextApiHandler => {
         }
       }
 
-      console.log('CALLING HANDLER', req, res);
       return await handler(req, res); // Call Handler
     } catch (e) {
       withScope(scope => {
