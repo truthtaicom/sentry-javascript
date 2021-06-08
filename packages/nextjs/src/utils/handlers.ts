@@ -2,6 +2,7 @@ import { captureException, getCurrentHub, Handlers, startTransaction, withScope 
 import { extractTraceparentData, getActiveTransaction, hasTracingEnabled } from '@sentry/tracing';
 import { addExceptionMechanism, isString, logger, stripUrlQueryAndFragment } from '@sentry/utils';
 import { NextApiHandler } from 'next';
+import * as path from 'path';
 
 import { addRequestDataToEvent, NextRequest } from './instrumentServer';
 
@@ -12,6 +13,8 @@ type WrappedNextApiHandler = NextApiHandler;
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export const withSentry = (handler: NextApiHandler): WrappedNextApiHandler => {
+  console.log(process.env.SENTRY_SERVER_INIT_PATH);
+  require(path.resolve(process.env.SENTRY_SERVER_INIT_PATH as string));
   const outerHub = getCurrentHub();
   const outerCurrentScope = outerHub.getScope();
   // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
