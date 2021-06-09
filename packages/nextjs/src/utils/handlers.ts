@@ -41,8 +41,8 @@ export const withSentry = (handler: NextApiHandler): WrappedNextApiHandler => {
   // fs.readdirSync('/var/task/.next/server/chunks').forEach(file => {
   //   console.log(file);
   // });
-  console.log(process.env.SENTRY_SERVER_INIT_PATH);
-  require(path.resolve(process.env.SENTRY_SERVER_INIT_PATH as string));
+  // console.log(process.env.SENTRY_SERVER_INIT_PATH);
+  // require(path.resolve(process.env.SENTRY_SERVER_INIT_PATH as string));
   const outerHub = getCurrentHub();
   const outerCurrentScope = outerHub.getScope();
   // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
