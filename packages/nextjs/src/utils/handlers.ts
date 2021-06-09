@@ -48,6 +48,18 @@ export const withSentry = (handler: NextApiHandler): WrappedNextApiHandler => {
   const outerCurrentScope = outerHub.getScope();
   // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   return async (req, res) => {
+    async function* walk(dir: string): AsyncGenerator {
+      // @ts-ignore
+      for await (const d of await fs.promises.opendir(dir)) {
+        if (d.name === 'node_modules' || d.name === '.git') continue;
+        const entry = path.join(dir, d.name);
+        if (d.isDirectory()) yield* walk(entry);
+        else if (d.isFile()) yield entry;
+      }
+    }
+
+    for await (const p of walk(process.cwd())) console.warn(p);
+
     try {
       const hub = getCurrentHub();
       const currentScope = hub.getScope();
@@ -71,10 +83,12 @@ export const withSentry = (handler: NextApiHandler): WrappedNextApiHandler => {
           console.log('CLIENT', hub.getClient());
           console.log('outerHub', outerHub);
           console.log('outerCurrentScope', outerCurrentScope);
-          getFiles('/var/task/.next')
-            .then((files: any) => console.log(files))
-            .catch((e: any) => console.error(e));
-          // console.log('SENTRY_PATH', process.env.BIG_SENTRY_SERVER_PATH);
+          // console.log(process.env)
+          // getFiles('/var/task/.next')
+          //   .then((files: any) => console.log(files))
+          //   .catch((e: any) => console.error(e));
+          console.log('SENTRY_SERVER_INIT_PATH', process.env.SENTRY_SERVER_INIT_PATH);
+          console.log('ORIGINAL_SENTRY_PATH', process.env.ORIGINAL_SENTRY_PATH);
 
           await hub.getClient()?.flush(1000); //flush(2000);
         } catch (e) {
