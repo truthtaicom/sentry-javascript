@@ -8,7 +8,7 @@ import * as path from 'path';
 const SENTRY_CLIENT_CONFIG_FILE = './sentry.client.config.js';
 const SENTRY_SERVER_CONFIG_FILE = './sentry.server.config.js';
 // this is where the transpiled/bundled version of `SENTRY_SERVER_CONFIG_FILE` will end up
-export const SERVER_SDK_INIT_PATH = 'sentry/initServerSDK.js';
+export const SERVER_SDK_INIT_PATH = 'chunks/sentry/initServerSDK.js';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type PlainObject<T = any> = { [key: string]: T };
