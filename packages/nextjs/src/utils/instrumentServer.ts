@@ -109,6 +109,7 @@ function makeWrappedHandlerGetter(origHandlerGetter: HandlerGetter): WrappedHand
   // We wrap this purely in order to be able to grab data and do further monkeypatching the first time it runs.
   // Otherwise, it's just a pass-through to the original method.
   const wrappedHandlerGetter = async function(this: NextServer): Promise<ReqHandler> {
+    require(path.resolve(process.env.SENTRY_SERVER_INIT_PATH as string));
     if (!sdkSetupComplete) {
       try {
         // `SENTRY_SERVER_INIT_PATH` is set at build time, and points to a webpack-processed version of the user's
