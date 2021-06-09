@@ -93,9 +93,6 @@ export function instrumentServer(): void {
   // Whenever an API request is handled and the wrapped `Server.ensureApiPage` is called, or whenever a page request is
   // handled and the wrapped `Server.findPageComponents` is called:
   //    Replace URL in transaction name with parameterized version
-
-  throw new Error('instrumentation');
-
   const nextServerPrototype = Object.getPrototypeOf(createNextServer({}));
   fill(nextServerPrototype, 'getServerRequestHandler', makeWrappedHandlerGetter);
 }
@@ -112,6 +109,7 @@ function makeWrappedHandlerGetter(origHandlerGetter: HandlerGetter): WrappedHand
   // Otherwise, it's just a pass-through to the original method.
   const wrappedHandlerGetter = async function(this: NextServer): Promise<ReqHandler> {
     require(path.resolve(process.env.SENTRY_SERVER_INIT_PATH as string));
+    throw new Error('instrumentation');
     if (!sdkSetupComplete) {
       try {
         // `SENTRY_SERVER_INIT_PATH` is set at build time, and points to a webpack-processed version of the user's
