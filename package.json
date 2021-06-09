@@ -22,26 +22,20 @@
     "yarn": "1.22.5"
   },
   "workspaces": [
-    "packages/angular",
     "packages/browser",
     "packages/core",
-    "packages/ember",
     "packages/eslint-config-sdk",
     "packages/eslint-plugin-sdk",
-    "packages/gatsby",
     "packages/hub",
     "packages/integrations",
     "packages/minimal",
     "packages/nextjs",
     "packages/node",
     "packages/react",
-    "packages/serverless",
     "packages/tracing",
     "packages/types",
     "packages/typescript",
-    "packages/utils",
-    "packages/vue",
-    "packages/wasm"
+    "packages/utils"
   ],
   "devDependencies": {
     "@google-cloud/storage": "^5.7.0",
