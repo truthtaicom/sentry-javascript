@@ -162,6 +162,7 @@ export function withSentryConfig(
       setRuntimeEnvVars(projectDir, {
         // ex: .next/server/sentry/initServerSdk.js
         SENTRY_SERVER_INIT_PATH: path.relative(projectDir, serverSDKInitOutputPath),
+        BIG_SENTRY_SERVER_PATH: serverSDKInitOutputPath,
       });
     }
 
