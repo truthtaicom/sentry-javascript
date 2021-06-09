@@ -30,9 +30,11 @@ async function getFiles(dir: any): any {
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export const withSentry = (handler: NextApiHandler): WrappedNextApiHandler => {
+  // require('')
   // require(path.resolve('.next/server/chunks/sentry/initServerSdk.js'));
   // require(process.env.BIG_SENTRY_SERVER_PATH as string);
   // console.log('/var/task/.next/server');
+  // /var/task/.next/server/chunks/sentry/initServerSDK.js
   // fs.readdirSync('/var/task/.next/server').forEach(file => {
   //   console.log(file);
   // });

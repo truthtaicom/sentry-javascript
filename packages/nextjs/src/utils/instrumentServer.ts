@@ -1,11 +1,11 @@
 import { captureException, deepReadDirSync, getCurrentHub, startTransaction } from '@sentry/node';
 import { extractTraceparentData, getActiveTransaction, hasTracingEnabled } from '@sentry/tracing';
 import { Event as SentryEvent } from '@sentry/types';
-import { fill, isString, logger, stripUrlQueryAndFragment } from '@sentry/utils';
+import { fill, isString, logger, stripUrlQueryAndFragment, dynamicRequire } from '@sentry/utils';
 import * as domain from 'domain';
 import * as http from 'http';
 import { default as createNextServer } from 'next';
-import * as path from 'path';
+// import * as path from 'path';
 import * as querystring from 'querystring';
 import * as url from 'url';
 
@@ -113,7 +113,8 @@ function makeWrappedHandlerGetter(origHandlerGetter: HandlerGetter): WrappedHand
       try {
         // `SENTRY_SERVER_INIT_PATH` is set at build time, and points to a webpack-processed version of the user's
         // `sentry.server.config.js`. Requiring it starts the SDK.
-        require(path.resolve('.next/server/chunks/sentry/initServerSdk.js'));
+        // require(path.resolve('.next/server/chunks/sentry/initServerSdk.js'));
+        dynamicRequire(module, '/var/task/.next/server/chunks/sentry/initServerSDK.js');
       } catch (err) {
         // Log the error but don't bail - we still want the wrapping to happen, in case the user is doing something weird
         // and manually calling `Sentry.init()` somewhere else. We log to console instead of using logger from utils
