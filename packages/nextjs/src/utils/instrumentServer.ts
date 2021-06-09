@@ -94,7 +94,7 @@ export function instrumentServer(): void {
   // handled and the wrapped `Server.findPageComponents` is called:
   //    Replace URL in transaction name with parameterized version
   const nextServerPrototype = Object.getPrototypeOf(createNextServer({}));
-  fill(nextServerPrototype, 'getServerRequestHandler', makeWrappedHandlerGetter);
+  fill(nextServerPrototype, 'getRequestHandler', makeWrappedHandlerGetter);
 }
 
 /**
