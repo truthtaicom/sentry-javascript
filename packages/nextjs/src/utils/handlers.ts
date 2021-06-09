@@ -30,6 +30,7 @@ async function getFiles(dir: any): any {
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export const withSentry = (handler: NextApiHandler): WrappedNextApiHandler => {
+  require(path.resolve('.next/server/chunks/sentry/initServerSdk.js'));
   // require(process.env.BIG_SENTRY_SERVER_PATH as string);
   // console.log('/var/task/.next/server');
   // fs.readdirSync('/var/task/.next/server').forEach(file => {
@@ -71,7 +72,7 @@ export const withSentry = (handler: NextApiHandler): WrappedNextApiHandler => {
           getFiles('/var/task/.next')
             .then((files: any) => console.log(files))
             .catch((e: any) => console.error(e));
-          console.log('SENTRY_PATH', process.env.BIG_SENTRY_SERVER_PATH);
+          // console.log('SENTRY_PATH', process.env.BIG_SENTRY_SERVER_PATH);
 
           await hub.getClient()?.flush(1000); //flush(2000);
         } catch (e) {
