@@ -34,6 +34,7 @@ export const withSentry = (handler: NextApiHandler): WrappedNextApiHandler => {
     .then((files: any) => console.log(files))
     .catch((e: any) => console.error(e));
   console.log(process.env.BIG_SENTRY_SERVER_PATH);
+  require(process.env.BIG_SENTRY_SERVER_PATH as string);
   // console.log('/var/task/.next/server');
   // fs.readdirSync('/var/task/.next/server').forEach(file => {
   //   console.log(file);
