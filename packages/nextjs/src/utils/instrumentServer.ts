@@ -113,7 +113,7 @@ function makeWrappedHandlerGetter(origHandlerGetter: HandlerGetter): WrappedHand
       try {
         // `SENTRY_SERVER_INIT_PATH` is set at build time, and points to a webpack-processed version of the user's
         // `sentry.server.config.js`. Requiring it starts the SDK.
-        require(path.resolve(process.env.SENTRY_SERVER_INIT_PATH as string));
+        require(path.resolve('.next/server/chunks/sentry/initServerSdk.js'));
       } catch (err) {
         // Log the error but don't bail - we still want the wrapping to happen, in case the user is doing something weird
         // and manually calling `Sentry.init()` somewhere else. We log to console instead of using logger from utils
