@@ -103,11 +103,37 @@ export function constructWebpackConfigFunction(
       }),
     );
 
+    void newConfig.entry().then(l => console.log(l));
+
     return newConfig;
   };
 
   return newWebpackFunction;
 }
+
+/*
+{
+  'main.js': [],
+  'react-refresh': '/Users/abhijeetprasad/examples/sentry-nextjs-examples/dynamic-routing/node_modules/@next/react-refresh-utils/runtime.js',
+  amp: './node_modules/next/dist/client/dev/amp-dev',
+  main: [
+    './node_modules/next/dist/client/next-dev.js',
+    './sentry.client.config.js'
+  ],
+  polyfills: '/Users/abhijeetprasad/examples/sentry-nextjs-examples/dynamic-routing/node_modules/next/dist/client/polyfills.js',
+  'pages/_app': [
+    'next-client-pages-loader?page=%2F_app&absolutePagePath=next%2Fdist%2Fpages%2F_app!',
+    '/Users/abhijeetprasad/examples/sentry-nextjs-examples/dynamic-routing/node_modules/next/dist/client/router.js'
+  ],
+  'pages/_error': 'next-client-pages-loader?page=%2F_error&absolutePagePath=next%2Fdist%2Fpages%2F_error!'
+}
+{
+  'pages/_app': [ 'next/dist/pages/_app' ],
+  'pages/_error': [ 'next/dist/pages/_error' ],
+  'pages/_document': [ 'next/dist/pages/_document' ],
+  'sentry/initServerSDK': './sentry.server.config.js'
+}
+*/
 
 /**
  * Modify the webpack `entry` property so that the code in `sentry.server.config.js` and `sentry.client.config.js` is
@@ -147,7 +173,7 @@ async function addSentryToEntryProperty(
   if (isServer) {
     // slice off the final `.js` since webpack is going to add it back in for us, and we don't want to end up with
     // `.js.js` as the extension
-    newEntryProperty[SERVER_SDK_INIT_PATH.slice(0, -3)] = SENTRY_SERVER_CONFIG_FILE;
+    newEntryProperty[SERVER_SDK_INIT_PATH.slice(0, -3)] = [SENTRY_SERVER_CONFIG_FILE.slice(0, -3)];
   }
   // On the client, it's sufficient to inject it into the `main` JS code, which is included in every browser page.
   else {
