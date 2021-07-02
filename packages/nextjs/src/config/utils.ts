@@ -3,10 +3,12 @@ import * as path from 'path';
 
 import { WebpackConfigObject } from './types';
 
-export const SENTRY_CLIENT_CONFIG_FILE = './sentry.client.config.js';
-export const SENTRY_SERVER_CONFIG_FILE = './sentry.server.config.js';
-// this is where the transpiled/bundled version of `SENTRY_SERVER_CONFIG_FILE` will end up
-export const SERVER_SDK_INIT_PATH = 'sentry/initServerSDK.js';
+export const CLIENT_SDK_CONFIG_FILE = './sentry.client.config.js';
+export const SERVER_SDK_CONFIG_FILE = './sentry.server.config.js';
+// this is where the transpiled/bundled versions of `SERVER_SDK_CONFIG_FILE` and `CLIENT_SDK_CONFIG_FILE` will end up
+// (webpack will add the `.js` at the end for us)
+export const SERVER_SDK_INIT_BUNDLE = 'sentry/initServerSDK';
+export const CLIENT_SDK_INIT_BUNDLE = 'sentry/initClientSDK';
 
 /**
  * Store the path to the bundled version of the user's server config file (where `Sentry.init` is called).
@@ -15,7 +17,7 @@ export const SERVER_SDK_INIT_PATH = 'sentry/initServerSDK.js';
  */
 export function storeServerConfigFileLocation(config: WebpackConfigObject): void {
   const outputLocation = path.dirname(path.join(config.output.path, config.output.filename));
-  const serverSDKInitOutputPath = path.join(outputLocation, SERVER_SDK_INIT_PATH);
+  const serverSDKInitOutputPath = path.join(outputLocation, SERVER_SDK_INIT_BUNDLE);
   const projectDir = config.context;
   setRuntimeEnvVars(projectDir, {
     // ex: .next/server/sentry/initServerSdk.js

@@ -7,7 +7,7 @@ import {
   SentryWebpackPluginOptions,
   WebpackConfigObject,
 } from '../src/config/types';
-import { SENTRY_SERVER_CONFIG_FILE, SERVER_SDK_INIT_PATH } from '../src/config/utils';
+import { SERVER_SDK_CONFIG_FILE, SERVER_SDK_INIT_BUNDLE } from '../src/config/utils';
 import { constructWebpackConfigFunction, SentryWebpackPlugin } from '../src/config/webpack';
 
 // mock `storeServerConfigFileLocation` in order to make it a no-op when necessary
@@ -221,7 +221,7 @@ describe('webpack config', () => {
 
       expect(finalWebpackConfig.entry).toEqual(
         expect.objectContaining({
-          [SERVER_SDK_INIT_PATH.slice(0, -3)]: SENTRY_SERVER_CONFIG_FILE,
+          [SERVER_SDK_INIT_BUNDLE.slice(0, -3)]: SERVER_SDK_CONFIG_FILE,
         }),
       );
     });

@@ -13,9 +13,10 @@ import {
   WebpackEntryProperty,
 } from './types';
 import {
-  SENTRY_CLIENT_CONFIG_FILE,
-  SENTRY_SERVER_CONFIG_FILE,
-  SERVER_SDK_INIT_PATH,
+  CLIENT_SDK_CONFIG_FILE,
+  CLIENT_SDK_INIT_BUNDLE,
+  SERVER_SDK_CONFIG_FILE,
+  SERVER_SDK_INIT_BUNDLE,
   storeServerConfigFileLocation,
 } from './utils';
 
@@ -53,9 +54,10 @@ export function constructWebpackConfigFunction(
   userNextConfig: NextConfigObject = {},
   userSentryWebpackPluginOptions: Partial<SentryWebpackPluginOptions> = {},
 ): WebpackConfigFunction {
-  const newWebpackFunction = (config: WebpackConfigObject, options: BuildContext): WebpackConfigObject => {
-    // clone to avoid mutability issues
-    let newConfig = { ...config };
+  // Will be called by nextjs and passed its default webpack configuration. Note that `defaultConfig` and `buildContext`
+  // are referred to as `config` and `options` in the nextjs docs.
+  const newWebpackFunction = (defaultConfig: WebpackConfigObject, buildContext: BuildContext): WebpackConfigObject => {
+    let newConfig = { ...defaultConfig };
 
     // if we're building server code, store the webpack output path as an env variable, so we know where to look for the
     // webpack-processed version of `sentry.server.config.js` when we need it
@@ -66,7 +68,7 @@ export function constructWebpackConfigFunction(
     // if user has custom webpack config (which always takes the form of a function), run it so we have actual values to
     // work with
     if ('webpack' in userNextConfig && typeof userNextConfig.webpack === 'function') {
-      newConfig = userNextConfig.webpack(newConfig, options);
+      newConfig = userNextConfig.webpack(newConfig, buildContext);
     }
 
     // Tell webpack to inject user config files (containing the two `Sentry.init()` calls) into the appropriate output
@@ -78,10 +80,10 @@ export function constructWebpackConfigFunction(
     // will call the callback which will call `f` which will call `x.y`... and on and on. Theoretically this could also
     // be fixed by using `bind`, but this is way simpler.)
     const origEntryProperty = newConfig.entry;
-    newConfig.entry = async () => addSentryToEntryProperty(origEntryProperty, options.isServer);
+    newConfig.entry = async () => addSentryToEntryProperty(origEntryProperty, buildContext);
 
     // Enable the Sentry plugin (which uploads source maps to Sentry when not in dev) by default
-    const enableWebpackPlugin = options.isServer
+    const enableWebpackPlugin = buildContext.isServer
       ? !userNextConfig.sentry?.disableServerWebpackPlugin
       : !userNextConfig.sentry?.disableClientWebpackPlugin;
 
@@ -92,7 +94,7 @@ export function constructWebpackConfigFunction(
 
       // Next doesn't let you change this is dev even if you want to - see
       // https://github.com/vercel/next.js/blob/master/errors/improper-devtool.md
-      if (!options.dev) {
+      if (!buildContext.dev) {
         newConfig.devtool = 'source-map';
       }
 
@@ -103,8 +105,8 @@ export function constructWebpackConfigFunction(
         // @ts-ignore Our types for the plugin are messed up somehow - TS wants this to be `SentryWebpackPlugin.default`,
         // but that's not actually a thing
         new SentryWebpackPlugin({
-          dryRun: options.dev,
-          release: getSentryRelease(options.buildId),
+          dryRun: buildContext.dev,
+          release: getSentryRelease(buildContext.buildId),
           ...defaultSentryWebpackPluginOptions,
           ...userSentryWebpackPluginOptions,
         }),
@@ -122,14 +124,13 @@ export function constructWebpackConfigFunction(
  * included in the the necessary bundles.
  *
  * @param origEntryProperty The value of the property before Sentry code has been injected
- * @param isServer A boolean provided by nextjs indicating whether we're handling the server bundles or the browser
- * bundles
+ * @param buildContext Object passed by nextjs containing metadata about the build
  * @returns The value which the new `entry` property (which will be a function) will return (TODO: this should return
  * the function, rather than the function's return value)
  */
 async function addSentryToEntryProperty(
   origEntryProperty: WebpackEntryProperty,
-  isServer: boolean,
+  buildContext: BuildContext,
 ): Promise<EntryPropertyObject> {
   // The `entry` entry in a webpack config can be a string, array of strings, object, or function. By default, nextjs
   // sets it to an async function which returns the promise of an object of string arrays. Because we don't know whether
@@ -137,95 +138,149 @@ async function addSentryToEntryProperty(
   // we know is that it won't have gotten *simpler* in form, so we only need to worry about the object and function
   // options. See https://webpack.js.org/configuration/entry-context/#entry.
 
-  let newEntryProperty = origEntryProperty;
-  if (typeof origEntryProperty === 'function') {
-    newEntryProperty = await origEntryProperty();
-  }
-  newEntryProperty = newEntryProperty as EntryPropertyObject;
+  const modifiedEntryProperty =
+    typeof origEntryProperty === 'function' ? await origEntryProperty() : { ...origEntryProperty };
 
-  // Add a new element to the `entry` array, we force webpack to create a bundle out of the user's
-  // `sentry.server.config.js` file and output it to `SERVER_INIT_LOCATION`. (See
-  // https://webpack.js.org/guides/code-splitting/#entry-points.) We do this so that the user's config file is run
-  // through babel (and any other processors through which next runs the rest of the user-provided code - pages, API
-  // routes, etc.). Specifically, we need any ESM-style `import` code to get transpiled into ES5, so that we can call
-  // `require()` on the resulting file when we're instrumenting the sesrver. (We can't use a dynamic import there
-  // because that then forces the user into a particular TS config.)
+  const webpackVersion = parseInt(buildContext.webpack.version[0]);
 
-  // On the server, create a separate bundle, as there's no one entry point depended on by all the others
-  if (isServer) {
-    // slice off the final `.js` since webpack is going to add it back in for us, and we don't want to end up with
-    // `.js.js` as the extension
-    newEntryProperty[SERVER_SDK_INIT_PATH.slice(0, -3)] = SENTRY_SERVER_CONFIG_FILE;
+  let injectionType: 'dependency' | 'source file', injectedValue;
+  const userConfigFile = buildContext.isServer ? SERVER_SDK_CONFIG_FILE : CLIENT_SDK_CONFIG_FILE;
+
+  // In webpack 5, create separate bundles out of the user's `sentry.server.config.js` and `sentry.client.config.js`
+  // file, and use `dependOn` in order to prevent code duplication. See
+  // https://webpack.js.org/guides/code-splitting/#entry-dependencies.
+  // if (webpackVersion >= 5) {
+  if (webpackVersion > 5) {
+    const newEntryPointName = buildContext.isServer ? SERVER_SDK_INIT_BUNDLE : CLIENT_SDK_INIT_BUNDLE;
+    modifiedEntryProperty[newEntryPointName] = userConfigFile;
+
+    injectionType = 'dependency';
+    injectedValue = newEntryPointName;
   }
-  // On the client, it's sufficient to inject it into the `main` JS code, which is included in every browser page.
+  // In webpack 4, include `sentry.server.config.js` and `sentry.client.config.js` directly in the relevant entries
   else {
-    addFileToExistingEntryPoint(newEntryProperty, 'main', SENTRY_CLIENT_CONFIG_FILE);
+    injectionType = 'source file';
+    injectedValue = userConfigFile;
+  }
 
-    // To work around a bug in nextjs, we need to ensure that the `main.js` entry is empty (otherwise it'll choose that
-    // over `main` and we'll lose the change we just made). In case some other library has put something into it, copy
-    // its contents over before emptying it out. See
-    // https://github.com/getsentry/sentry-javascript/pull/3696#issuecomment-863363803.)
-    const mainjsValue = newEntryProperty['main.js'];
-    if (Array.isArray(mainjsValue) && mainjsValue.length > 0) {
-      const mainValue = newEntryProperty.main;
+  for (const entryPointName in modifiedEntryProperty) {
+    if (entryPointName === 'pages/_app' || entryPointName.includes('pages/api')) {
+      addToExistingEntryPoint(modifiedEntryProperty, {
+        entryPointName,
+        injectionType,
+        injectedValue,
+      });
 
-      // copy the `main.js` entries over
-      newEntryProperty.main = Array.isArray(mainValue)
-        ? [...mainjsValue, ...mainValue]
-        : { ...(mainValue as EntryPointObject), import: [...mainjsValue, ...(mainValue as EntryPointObject).import] };
-
-      // nuke the entries
-      newEntryProperty['main.js'] = [];
+      // webpack 4 and below can't handle a descriptor object, so just provide the value directly
+      if (webpackVersion < 5) {
+        modifiedEntryProperty[entryPointName] = (modifiedEntryProperty[entryPointName] as EntryPointObject).import;
+      }
     }
   }
 
-  return newEntryProperty;
+  return modifiedEntryProperty;
 }
 
-/**
- * Add a file to a specific element of the given `entry` webpack config property.
- *
- * @param entryProperty The existing `entry` config object
- * @param entryPointName The key where the file should be injected
- * @param filepath The path to the injected file
- */
-function addFileToExistingEntryPoint(
-  entryProperty: EntryPropertyObject,
-  entryPointName: string,
-  filepath: string,
+// /**
+//  * Add a file to a specific element of the given `entry` webpack config property.
+//  *
+//  * @param entryProperty The existing `entry` config object
+//  * @param entryPointName The key where the file should be injected
+//  * @param filepath The path to the injected file
+//  */
+// function addFileToExistingEntryPoint(
+//   entryProperty: EntryPropertyObject,
+//   entryPointName: string,
+//   filepath: string,
+// ): void {
+//   // can be a string, array of strings, or object whose `import` property is one of those two
+//   let injectedInto = entryProperty[entryPointName];
+
+//   // Sometimes especially for older next.js versions it happens we don't have an entry point
+//   if (!injectedInto) {
+//     // eslint-disable-next-line no-console
+//     console.error(`[Sentry] Can't inject ${filepath}, no entrypoint is defined.`);
+//     return;
+//   }
+
+//   // We inject the user's client config file after the existing code so that the config file has access to
+//   // `publicRuntimeConfig`. See https://github.com/getsentry/sentry-javascript/issues/3485
+//   if (typeof injectedInto === 'string') {
+//     injectedInto = [injectedInto, filepath];
+//   } else if (Array.isArray(injectedInto)) {
+//     injectedInto = [...injectedInto, filepath];
+//   } else {
+//     let importVal: string | string[];
+
+//     if (typeof injectedInto.import === 'string') {
+//       importVal = [injectedInto.import, filepath];
+//     } else {
+//       importVal = [...injectedInto.import, filepath];
+//     }
+
+//     injectedInto = {
+//       ...injectedInto,
+//       import: importVal,
+//     };
+//   }
+
+//   entryProperty[entryPointName] = injectedInto;
+// }
+
+// TODO docstring
+function addToExistingEntryPoint(
+  webpackEntryProperty: EntryPropertyObject,
+  options: {
+    entryPointName: string;
+    injectionType: 'source file' | 'dependency';
+    injectedValue: string;
+  },
 ): void {
-  // can be a string, array of strings, or object whose `import` property is one of those two
-  let injectedInto = entryProperty[entryPointName];
+  const { entryPointName, injectionType, injectedValue } = options;
+
+  // can be a string, array of strings, or object whose `import` and `dependOn` properties are each one of those two
+  const currentEntryPoint = webpackEntryProperty[entryPointName];
+  let newEntryPoint: EntryPointObject;
 
   // Sometimes especially for older next.js versions it happens we don't have an entry point
-  if (!injectedInto) {
+  if (!currentEntryPoint) {
     // eslint-disable-next-line no-console
-    console.error(`[Sentry] Can't inject ${filepath}, no entrypoint is defined.`);
+    console.error(`[Sentry] Can't inject ${injectedValue}, no entrypoint is defined.`);
     return;
   }
 
-  // We inject the user's client config file after the existing code so that the config file has access to
-  // `publicRuntimeConfig`. See https://github.com/getsentry/sentry-javascript/issues/3485
-  if (typeof injectedInto === 'string') {
-    injectedInto = [injectedInto, filepath];
-  } else if (Array.isArray(injectedInto)) {
-    injectedInto = [...injectedInto, filepath];
+  // In the case of injecting the user's server and client config files (the only source files we inject), we need to
+  // put our filepath last so their code has access to `serverRuntimeConfig` and `publicRuntimeConfig`. (For injecting a
+  // dependency it doesn't matter either way.) See https://github.com/getsentry/sentry-javascript/issues/3485.
+  if (typeof currentEntryPoint === 'string') {
+    newEntryPoint =
+      injectionType === 'source file'
+        ? // ? { import: [injectedValue, currentEntryPoint] }
+          { import: [currentEntryPoint, injectedValue] }
+        : { import: currentEntryPoint, dependOn: injectedValue };
+  } else if (Array.isArray(currentEntryPoint)) {
+    newEntryPoint =
+      injectionType === 'source file'
+        ? { import: [...currentEntryPoint, injectedValue] }
+        : { import: currentEntryPoint, dependOn: injectedValue };
   } else {
-    let importVal: string | string[];
+    const propertyName = injectionType === 'source file' ? 'import' : 'dependOn';
+    const currentPropertyValue = currentEntryPoint[propertyName] || [];
+    let newPropertyValue;
 
-    if (typeof injectedInto.import === 'string') {
-      importVal = [injectedInto.import, filepath];
+    if (typeof currentPropertyValue === 'string') {
+      newPropertyValue = [currentPropertyValue, injectedValue];
     } else {
-      importVal = [...injectedInto.import, filepath];
+      newPropertyValue = [...currentPropertyValue, injectedValue];
     }
 
-    injectedInto = {
-      ...injectedInto,
-      import: importVal,
+    newEntryPoint = {
+      ...currentEntryPoint,
+      [propertyName]: newPropertyValue,
     };
   }
 
-  entryProperty[entryPointName] = injectedInto;
+  webpackEntryProperty[entryPointName] = newEntryPoint;
 }
 
 /**

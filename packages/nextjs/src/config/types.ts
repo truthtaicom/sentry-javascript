@@ -43,7 +43,7 @@ export type WebpackConfigObject = {
 };
 
 // Information about the current build environment
-export type BuildContext = { dev: boolean; isServer: boolean; buildId: string };
+export type BuildContext = { dev: boolean; isServer: boolean; buildId: string; webpack: { version: string } };
 
 /**
  * Webpack `entry` config
@@ -66,4 +66,4 @@ export type EntryPropertyObject = {
 export type EntryPropertyFunction = () => Promise<EntryPropertyObject>;
 
 // An object with options for a single entry point, potentially one of many in the webpack `entry` property
-export type EntryPointObject = { import: string | Array<string> };
+export type EntryPointObject = { import: string | Array<string>; dependOn?: string | Array<string> };
