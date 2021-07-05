@@ -14,7 +14,6 @@ type WrappedNextApiHandler = NextApiHandler;
 export const withSentry = (handler: NextApiHandler): WrappedNextApiHandler => {
   // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   return async (req, res) => {
-    console.log(process.env);
     try {
       const currentScope = getCurrentHub().getScope();
 
@@ -83,8 +82,10 @@ export const withSentry = (handler: NextApiHandler): WrappedNextApiHandler => {
         transaction.finish();
       }
       try {
+        logger.log('Flushing event buffer');
         await flush(2000);
       } catch (e) {
+        logger.log('Error while flushing buffer:', e);
         // no-empty
       }
     }
