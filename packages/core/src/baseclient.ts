@@ -186,6 +186,7 @@ export abstract class BaseClient<B extends Backend, O extends Options> implement
    */
   public flush(timeout?: number): PromiseLike<boolean> {
     return this._isClientProcessing(timeout).then(ready => {
+      logger.log('Client has finished processing in flush call.');
       return this._getBackend()
         .getTransport()
         .close(timeout)
@@ -273,6 +274,9 @@ export abstract class BaseClient<B extends Backend, O extends Options> implement
           clearInterval(interval);
           resolve(true);
         } else {
+          if (ticked % 50 === 0) {
+            logger.log(`Client processing: ${ticked}`);
+          }
           ticked += tick;
           if (timeout && ticked >= timeout) {
             clearInterval(interval);
