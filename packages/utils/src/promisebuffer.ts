@@ -26,6 +26,7 @@ export class PromiseBuffer<T> {
     if (!this.isReady()) {
       return SyncPromise.reject(new SentryError('Not adding Promise due to buffer limit reached.'));
     }
+    debugger;
     const task = taskProducer();
     if (this._buffer.indexOf(task) === -1) {
       this._buffer.push(task);

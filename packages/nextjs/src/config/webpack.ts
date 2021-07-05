@@ -255,23 +255,26 @@ function addToExistingEntryPoint(
   if (typeof currentEntryPoint === 'string') {
     newEntryPoint =
       injectionType === 'source file'
-        ? // ? { import: [injectedValue, currentEntryPoint] }
-          { import: [currentEntryPoint, injectedValue] }
-        : { import: currentEntryPoint, dependOn: injectedValue };
+        ? { import: [injectedValue, currentEntryPoint] }
+        : // { import: [currentEntryPoint, injectedValue] }
+          { import: currentEntryPoint, dependOn: injectedValue };
   } else if (Array.isArray(currentEntryPoint)) {
     newEntryPoint =
       injectionType === 'source file'
-        ? { import: [...currentEntryPoint, injectedValue] }
-        : { import: currentEntryPoint, dependOn: injectedValue };
+        ? { import: [injectedValue, ...currentEntryPoint] }
+        : // ? { import: [...currentEntryPoint, injectedValue] }
+          { import: currentEntryPoint, dependOn: injectedValue };
   } else {
     const propertyName = injectionType === 'source file' ? 'import' : 'dependOn';
     const currentPropertyValue = currentEntryPoint[propertyName] || [];
     let newPropertyValue;
 
     if (typeof currentPropertyValue === 'string') {
-      newPropertyValue = [currentPropertyValue, injectedValue];
+      newPropertyValue = [injectedValue, currentPropertyValue];
+      // newPropertyValue = [currentPropertyValue, injectedValue];
     } else {
-      newPropertyValue = [...currentPropertyValue, injectedValue];
+      newPropertyValue = [injectedValue, ...currentPropertyValue];
+      // newPropertyValue = [...currentPropertyValue, injectedValue];
     }
 
     newEntryPoint = {
