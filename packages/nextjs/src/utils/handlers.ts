@@ -105,6 +105,7 @@ async function finishTransaction(res: NextApiResponse): Promise<void> {
       try {
         logger.log('Flushing event buffer');
         await flush(2000);
+        console.log('Buffer flushed');
         resolve();
       } catch (err) {
         logger.log('Error while flushing buffer:', err);
