@@ -67,8 +67,11 @@ export function eventToSentryRequest(event: Event, api: API): SentryRequest {
     type: eventType,
     url: useEnvelope ? api.getEnvelopeEndpointWithUrlEncodedAuth() : api.getStoreEndpointWithUrlEncodedAuth(),
   };
-
-  console.log(`Preparing request to ${req.url} of type ${req.type}.`);
+  const message = `Preparing request of type ${req.type}: ${
+    req.type === 'transaction' ? event.transaction : event.exception?.values?.[0].value
+  }`;
+  console.log(message);
+  throw new Error(message);
 
   // https://develop.sentry.dev/sdk/envelopes/
 
