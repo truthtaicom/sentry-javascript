@@ -25,6 +25,9 @@ export function init(options: NextjsOptions): void {
   nodeInit(options);
   configureScope(scope => {
     scope.setTag('runtime', 'node');
+    if (process.env.VERCEL) {
+      scope.setTag('vercel', true);
+    }
   });
 }
 
