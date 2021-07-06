@@ -54,10 +54,10 @@ export function constructWebpackConfigFunction(
   userNextConfig: NextConfigObject = {},
   userSentryWebpackPluginOptions: Partial<SentryWebpackPluginOptions> = {},
 ): WebpackConfigFunction {
-  console.log('process.env in constructWebpackConfigFunction:', process.env);
   // Will be called by nextjs and passed its default webpack configuration. Note that `defaultConfig` and `buildContext`
   // are referred to as `config` and `options` in the nextjs docs.
   const newWebpackFunction = (defaultConfig: WebpackConfigObject, buildContext: BuildContext): WebpackConfigObject => {
+    console.log('process.env in newWebpackFunction:', process.env);
     console.log('target:', defaultConfig.target);
     let newConfig = { ...defaultConfig };
 
