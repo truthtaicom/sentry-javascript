@@ -1,7 +1,7 @@
 import { getCurrentHub, initAndBind, Integrations as CoreIntegrations } from '@sentry/core';
 import { getMainCarrier, setHubOnCarrier } from '@sentry/hub';
 import { SessionStatus } from '@sentry/types';
-import { getGlobalObject } from '@sentry/utils';
+import { getGlobalObject, logger } from '@sentry/utils';
 import * as domain from 'domain';
 
 import { NodeClient } from './client';
@@ -147,6 +147,7 @@ export function lastEventId(): string | undefined {
  */
 export async function flush(timeout?: number): Promise<boolean> {
   const client = getCurrentHub().getClient<NodeClient>();
+  logger.log('In node SDK, sdk.flush(). Client defined:', !!client);
   if (client) {
     return client.flush(timeout);
   }

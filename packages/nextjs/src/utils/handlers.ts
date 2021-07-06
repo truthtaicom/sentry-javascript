@@ -14,6 +14,7 @@ type WrappedNextApiHandler = NextApiHandler;
 export const withSentry = (handler: NextApiHandler): WrappedNextApiHandler => {
   // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   return async (req, res) => {
+    logger.log('process.env in withSentry:', process.env);
     try {
       const currentScope = getCurrentHub().getScope();
 
