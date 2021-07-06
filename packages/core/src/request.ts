@@ -72,7 +72,7 @@ export function eventToSentryRequest(event: Event, api: API): SentryRequest {
   }`;
   console.log(message);
   // throw new Error(message);
-  process.exit(-1);
+  // process.exit(-1);
 
   // https://develop.sentry.dev/sdk/envelopes/
 
