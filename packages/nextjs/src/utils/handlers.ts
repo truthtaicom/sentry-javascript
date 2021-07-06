@@ -21,9 +21,9 @@ export const withSentry = (handler: NextApiHandler): WrappedNextApiHandler => {
       const currentScope = getCurrentHub().getScope();
 
       if (currentScope) {
-        currentScope.setTag('commitMessage', process.env.VERCEL_GIT_COMMIT_MESSAGE);
-        currentScope.setTag('sdkCommitMessage', process.env.SDK_COMMIT);
-        console.log('sdkCommitMessage', process.env.SDK_COMMIT);
+        // currentScope.setTag('commitMessage', process.env.VERCEL_GIT_COMMIT_MESSAGE);
+        // currentScope.setTag('sdkCommitMessage', process.env.SDK_COMMIT);
+        // console.log('sdkCommitMessage', process.env.SDK_COMMIT);
         currentScope.addEventProcessor(event => addRequestDataToEvent(event, req as NextRequest));
 
         if (hasTracingEnabled()) {

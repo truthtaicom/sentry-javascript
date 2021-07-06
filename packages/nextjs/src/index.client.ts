@@ -29,9 +29,9 @@ export function init(options: NextjsOptions): void {
     integrations,
   });
   configureScope(scope => {
-    if (window.location.href.includes('vercel')) {
-      scope.setTag('vercel', true);
-    }
+    // if (window.location.href.includes('vercel')) {
+    //   scope.setTag('vercel', true);
+    // }
     scope.setTag('runtime', 'browser');
   });
 }
