@@ -90,6 +90,7 @@ export class FetchTransport extends BaseTransport {
    * @inheritDoc
    */
   public sendEvent(event: Event): PromiseLike<Response> {
+    console.log('in FetchTransport.sendEvent');
     return this._sendRequest(eventToSentryRequest(event, this._api), event);
   }
 
@@ -105,6 +106,7 @@ export class FetchTransport extends BaseTransport {
    * @param originalPayload Original payload used to create SentryRequest
    */
   private _sendRequest(sentryRequest: SentryRequest, originalPayload: Event | Session): PromiseLike<Response> {
+    console.log('in FetchTransport._sendRequest');
     if (this._isRateLimited(sentryRequest.type)) {
       return Promise.reject({
         event: originalPayload,

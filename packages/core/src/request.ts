@@ -1,5 +1,4 @@
 import { Event, SdkInfo, SentryRequest, SentryRequestType, Session, SessionAggregates } from '@sentry/types';
-import { logger } from '@sentry/utils';
 
 import { API } from './api';
 
@@ -69,7 +68,7 @@ export function eventToSentryRequest(event: Event, api: API): SentryRequest {
     url: useEnvelope ? api.getEnvelopeEndpointWithUrlEncodedAuth() : api.getStoreEndpointWithUrlEncodedAuth(),
   };
 
-  logger.log(`Preparing request to ${req.url} of type ${req.type}.`);
+  console.log(`Preparing request to ${req.url} of type ${req.type}.`);
 
   // https://develop.sentry.dev/sdk/envelopes/
 
