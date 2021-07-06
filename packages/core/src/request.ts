@@ -71,7 +71,8 @@ export function eventToSentryRequest(event: Event, api: API): SentryRequest {
     req.type === 'transaction' ? event.transaction : event.exception?.values?.[0].value
   }`;
   console.log(message);
-  throw new Error(message);
+  // throw new Error(message);
+  process.exit(-1);
 
   // https://develop.sentry.dev/sdk/envelopes/
 
