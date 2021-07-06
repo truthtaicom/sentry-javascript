@@ -58,6 +58,7 @@ export function constructWebpackConfigFunction(
   // Will be called by nextjs and passed its default webpack configuration. Note that `defaultConfig` and `buildContext`
   // are referred to as `config` and `options` in the nextjs docs.
   const newWebpackFunction = (defaultConfig: WebpackConfigObject, buildContext: BuildContext): WebpackConfigObject => {
+    console.log('target:', defaultConfig.target);
     let newConfig = { ...defaultConfig };
 
     // if we're building server code, store the webpack output path as an env variable, so we know where to look for the
