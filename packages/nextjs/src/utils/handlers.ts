@@ -59,7 +59,11 @@ export const withSentry = (handler: NextApiHandler): WrappedNextApiHandler => {
           });
         }
       }
-
+      await new Promise(resolve => {
+        setTimeout(() => {
+          resolve(5);
+        }, 2000);
+      });
       return await handler(req, res); // Call original handler
     } catch (e) {
       withScope(scope => {
