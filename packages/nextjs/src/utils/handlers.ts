@@ -1,5 +1,5 @@
 import { captureException, flush, getCurrentHub, Handlers, startTransaction, withScope } from '@sentry/node';
-import { extractTraceparentData, getActiveTransaction, hasTracingEnabled } from '@sentry/tracing';
+import { extractTraceparentData, getActiveTransaction, hasTracingEnabled, Span } from '@sentry/tracing';
 import { addExceptionMechanism, isString, logger, stripUrlQueryAndFragment } from '@sentry/utils';
 import { NextApiHandler, NextApiResponse } from 'next';
 
@@ -14,6 +14,7 @@ type WrappedNextApiHandler = NextApiHandler;
 export const withSentry = (handler: NextApiHandler): WrappedNextApiHandler => {
   // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   return async (req, res) => {
+    let span: Span | undefined;
     try {
       const currentScope = getCurrentHub().getScope();
 
@@ -52,7 +53,10 @@ export const withSentry = (handler: NextApiHandler): WrappedNextApiHandler => {
           );
           currentScope.setSpan(transaction);
 
-          res.on('finish', async () => await finishTransaction(res));
+          res.on('finish', async () => {
+            span?.finish();
+            await finishTransaction(res);
+          });
         }
       }
 
@@ -74,8 +78,7 @@ export const withSentry = (handler: NextApiHandler): WrappedNextApiHandler => {
       const transaction = getActiveTransaction();
       console.log('transaction:');
       console.log(transaction);
-      const span = transaction?.startChild({ op: 'test.timing' });
-      span?.finish();
+      span = transaction?.startChild({ op: 'test.timing' });
     }
   };
 };
