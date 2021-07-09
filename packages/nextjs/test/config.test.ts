@@ -8,9 +8,9 @@ import {
   WebpackConfigObject,
 } from '../src/config/types';
 import {
+  CLIENT_SDK_CONFIG_FILE,
   constructWebpackConfigFunction,
   SentryWebpackPlugin,
-  CLIENT_SDK_CONFIG_FILE,
   SERVER_SDK_CONFIG_FILE,
 } from '../src/config/webpack';
 
@@ -240,13 +240,13 @@ describe('webpack config', () => {
           // (was ['./node_modules/smellOVision/index.js', 'private-next-pages/_app.js'])
           'pages/_app': [SERVER_SDK_CONFIG_FILE, './node_modules/smellOVision/index.js', 'private-next-pages/_app.js'],
 
-          // original entry point value is an object containg string `import` value
+          // original entry point value is an object containing a string `import` value
           // (`import` was 'private-next-pages/api/simulator/dogStats/[name].js')
           'pages/api/simulator/dogStats/[name]': {
             import: [SERVER_SDK_CONFIG_FILE, 'private-next-pages/api/simulator/dogStats/[name].js'],
           },
 
-          // original entry point value is an object containg string array `import` value
+          // original entry point value is an object containing a string array `import` value
           // (`import` was ['./node_modules/dogPoints/converter.js', 'private-next-pages/api/simulator/leaderboard.js'])
           'pages/api/simulator/leaderboard': {
             import: [
