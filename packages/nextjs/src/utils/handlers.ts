@@ -69,6 +69,13 @@ export const withSentry = (handler: NextApiHandler): WrappedNextApiHandler => {
       });
       await finishTransaction(res);
       throw e;
+    } finally {
+      console.log('in finally block');
+      const transaction = getActiveTransaction();
+      console.log('transaction:');
+      console.log(transaction);
+      const span = transaction?.startChild({ op: 'test.timing' });
+      span?.finish();
     }
   };
 };
