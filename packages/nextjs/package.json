@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@sentry/core": "6.9.0",
+    "@sentry/hub": "6.9.0",
     "@sentry/integrations": "6.9.0",
     "@sentry/node": "6.9.0",
     "@sentry/react": "6.9.0",
