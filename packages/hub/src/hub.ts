@@ -127,14 +127,16 @@ export class Hub implements HubInterface {
   /**
    * @inheritDoc
    */
-  public pushScope(): Scope {
-    // We want to clone the content of prev scope
-    const scope = Scope.clone(this.getScope());
+  public pushScope(scope?: Scope): Scope {
+    // Use a clone of the current scope if no scope is given. Otherwise, clone the given scope.
+    const newScope = Scope.clone(scope || this.getScope());
+
     this.getStack().push({
       client: this.getClient(),
-      scope,
+      scope: newScope,
     });
-    return scope;
+
+    return newScope;
   }
 
   /**

@@ -35,14 +35,18 @@ export interface Hub {
   /**
    * Create a new scope to store context information.
    *
-   * The scope will be layered on top of the current one. It is isolated, i.e. all
-   * breadcrumbs and context information added to this scope will be removed once
-   * the scope ends. Be sure to always remove this scope with {@link this.popScope}
-   * when the operation finishes or throws.
+   * If an existing scope is given, it will be cloned and that clone used as the new scope. If no scope is given, a
+   * clone of the currently-active scope will be used.
    *
-   * @returns Scope, the new cloned scope
+   * The cloned scope will be layered on top of the current one. It is isolated, i.e. it does not mutate the given scope
+   * (if any) or the current scope. So, for example, all breadcrumbs and context information added to this scope will be
+   * removed once the scope ends. Be sure to always remove this scope with {@link this.popScope} when the operation
+   * finishes or throws.
+   *
+   * @param scope An existing scope to clone for use as the new scope
+   * @returns The newly-active scope
    */
-  pushScope(): Scope;
+  pushScope(scope?: Scope): Scope;
 
   /**
    * Removes a previously pushed scope from the stack.
