@@ -1,5 +1,5 @@
 import { Scope } from '@sentry/hub';
-import { captureException, flush, getCurrentHub, Handlers, startTransaction, withScope } from '@sentry/node';
+import { captureException, flush, getCurrentHub, Handlers, startTransaction } from '@sentry/node';
 import { extractTraceparentData, getActiveTransaction, hasTracingEnabled } from '@sentry/tracing';
 import { addExceptionMechanism, isString, logger, stripUrlQueryAndFragment } from '@sentry/utils';
 import * as domain from 'domain';
@@ -78,15 +78,15 @@ export const withSentry = (handler: NextApiHandler): WrappedNextApiHandler => {
       try {
         return await handler(req, res); // Call original handler
       } catch (e) {
-        withScope(scope => {
-          scope.addEventProcessor(event => {
+        if (currentScope) {
+          currentScope.addEventProcessor(event => {
             addExceptionMechanism(event, {
               handled: false,
             });
             return parseRequest(event, req);
           });
           captureException(e);
-        });
+        }
         throw e;
       }
     });
