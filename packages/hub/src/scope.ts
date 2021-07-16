@@ -97,7 +97,7 @@ export class Scope implements ScopeInterface {
       newScope._fingerprint = scope._fingerprint;
       newScope._eventProcessors = [...scope._eventProcessors];
       newScope._requestSession = scope._requestSession;
-      (newScope as any)._parent = scope;
+      newScope._parent = scope;
     }
     return newScope;
   }
