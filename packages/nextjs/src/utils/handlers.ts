@@ -94,7 +94,7 @@ export const withSentry = (handler: NextApiHandler): WrappedNextApiHandler => {
 };
 
 type ResponseEndMethod = ScopedResponse['end'];
-type WrappedResponseEndMethod = ScopedResponse['end'];
+type WrappedResponseEndMethod = ResponseEndMethod;
 
 function wrapEndMethod(origEnd: ResponseEndMethod): WrappedResponseEndMethod {
   return async function newEnd(this: ScopedResponse, ...args: unknown[]) {
@@ -125,10 +125,9 @@ function wrapEndMethod(origEnd: ResponseEndMethod): WrappedResponseEndMethod {
     try {
       logger.log('Flushing events...');
       await flush(2000);
+      logger.log('Done flushing events');
     } catch (e) {
       logger.log(`Error while flushing events:\n${e}`);
-    } finally {
-      logger.log('Done flushing events');
     }
 
     // now that our work is done, we can pop off the scope and allow the response to end
