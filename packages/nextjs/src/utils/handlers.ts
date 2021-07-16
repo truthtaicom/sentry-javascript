@@ -134,7 +134,12 @@ function wrapEndMethod(origEnd: ResponseEndMethod): WrappedResponseEndMethod {
     }
 
     // now that our work is done, we can pop off the scope and allow the response to end
-    currentHub.popScope();
+    if (currentHub.getScope()?.getParent() === this.__sentryScope) {
+      currentHub.popScope();
+    } else {
+      logger.warn('Found incorrect scope when popping. Please report this to the Sentry team.');
+    }
+
     return origEnd.call(this, ...args);
   };
 }
