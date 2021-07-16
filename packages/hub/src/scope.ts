@@ -75,6 +75,9 @@ export class Scope implements ScopeInterface {
   /** Request Mode Session Status */
   protected _requestSession?: RequestSession;
 
+  /** If the scope is a clone, the original scope from which the clone derived */
+  protected _parent?: Scope;
+
   /**
    * Inherit values from the parent scope.
    * @param scope to clone.
@@ -94,6 +97,7 @@ export class Scope implements ScopeInterface {
       newScope._fingerprint = scope._fingerprint;
       newScope._eventProcessors = [...scope._eventProcessors];
       newScope._requestSession = scope._requestSession;
+      (newScope as any)._parent = scope;
     }
     return newScope;
   }
@@ -295,6 +299,13 @@ export class Scope implements ScopeInterface {
    */
   public getSession(): Session | undefined {
     return this._session;
+  }
+
+  /**
+   * @inheritDoc
+   */
+  public getParent(): Scope | undefined {
+    return this._parent;
   }
 
   /**

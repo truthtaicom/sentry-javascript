@@ -133,6 +133,11 @@ export interface Scope {
   setRequestSession(requestSession?: RequestSession): this;
 
   /**
+   * The scope from which this scope was cloned, if any
+   */
+  getParent(): Scope | undefined;
+
+  /**
    * Updates the scope with provided data. Can work in three variations:
    * - plain object containing updatable attributes
    * - Scope instance that'll extract the attributes from
