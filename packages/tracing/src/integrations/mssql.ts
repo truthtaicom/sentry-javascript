@@ -54,14 +54,7 @@ export class Mssql implements Integration {
           });
         }
 
-        if (typeof values === 'function') {
-          return orig.call(this, config, function(err: Error, result: unknown) {
-            span?.finish();
-            values(err, result);
-          });
-        }
-
-        const rv = typeof values !== 'undefined' ? orig.call(this, config, values) : orig.call(this, config);
+        const rv = orig.call(this, config, values);
 
         if (isThenable(rv)) {
           return (rv as Promise<unknown>).then((res: unknown) => {
